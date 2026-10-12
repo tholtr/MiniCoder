@@ -1,7 +1,7 @@
-from firstcoder.runtime.user_input import UserInputOption, UserInputRequest, user_input_request_from_tool_result
-from firstcoder.permissions.types import PermissionAction, PermissionDecision, PermissionDecisionKind, PermissionRequest
-from firstcoder.providers.types import ToolCall
-from firstcoder.tools.permission_results import make_permission_confirmation_result, make_permission_denied_result
+from minicoder.runtime.user_input import UserInputOption, UserInputRequest, user_input_request_from_tool_result
+from minicoder.permissions.types import PermissionAction, PermissionDecision, PermissionDecisionKind, PermissionRequest
+from minicoder.providers.types import ToolCall
+from minicoder.tools.permission_results import make_permission_confirmation_result, make_permission_denied_result
 
 
 def test_permission_confirmation_result_round_trips_to_user_input_request() -> None:

@@ -1,14 +1,14 @@
 import pytest
 
-from firstcoder.agent.session import AgentSession
-from firstcoder.context.runtime_state import SessionRuntimeState
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.context.task_boundary import TaskBoundaryDecision, TaskBoundaryService
-from firstcoder.context.versions import CONTEXT_EVENT_SCHEMA_VERSION
-from firstcoder.context.writer import SessionEventWriter
-from firstcoder.planning.models import Task, TaskPlan, TaskPlanError
-from firstcoder.providers.types import ChatResponse, ToolCall
-from firstcoder.tools.types import ToolResult
+from minicoder.agent.session import AgentSession
+from minicoder.context.runtime_state import SessionRuntimeState
+from minicoder.context.store import JsonlSessionStore
+from minicoder.context.task_boundary import TaskBoundaryDecision, TaskBoundaryService
+from minicoder.context.versions import CONTEXT_EVENT_SCHEMA_VERSION
+from minicoder.context.writer import SessionEventWriter
+from minicoder.planning.models import Task, TaskPlan, TaskPlanError
+from minicoder.providers.types import ChatResponse, ToolCall
+from minicoder.tools.types import ToolResult
 
 
 def test_writer_appends_user_assistant_tool_messages_with_valid_parts(tmp_path) -> None:

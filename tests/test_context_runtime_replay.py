@@ -1,11 +1,11 @@
 from dataclasses import asdict
 
-from firstcoder.context.compaction import CompactionEvent
-from firstcoder.context.events import SessionEvent
-from firstcoder.context.llm_compact import LlmCompactEvent
-from firstcoder.context.runtime_replay import replay_runtime_state
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.context.task_boundary import TaskBoundaryService
+from minicoder.context.compaction import CompactionEvent
+from minicoder.context.events import SessionEvent
+from minicoder.context.llm_compact import LlmCompactEvent
+from minicoder.context.runtime_replay import replay_runtime_state
+from minicoder.context.store import JsonlSessionStore
+from minicoder.context.task_boundary import TaskBoundaryService
 
 
 def test_replay_restores_active_task_hash_from_confirmed_task_boundary(tmp_path) -> None:

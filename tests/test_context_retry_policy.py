@@ -1,4 +1,4 @@
-from firstcoder.context.retry_policy import (
+from minicoder.context.retry_policy import (
     CompactRetryDecision,
     CompactRetryPolicy,
 )

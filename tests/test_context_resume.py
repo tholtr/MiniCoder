@@ -1,9 +1,9 @@
-from firstcoder.context.checkpoint import Checkpoint
-from firstcoder.context.context_builder import ContextBuilder, InvalidCheckpointBoundaryError
-from firstcoder.context.events import SessionEvent
-from firstcoder.context.models import AgentMessage, MessagePart, SessionView
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.context.tool_sequence import InvalidToolCallSequenceError
+from minicoder.context.checkpoint import Checkpoint
+from minicoder.context.context_builder import ContextBuilder, InvalidCheckpointBoundaryError
+from minicoder.context.events import SessionEvent
+from minicoder.context.models import AgentMessage, MessagePart, SessionView
+from minicoder.context.store import JsonlSessionStore
+from minicoder.context.tool_sequence import InvalidToolCallSequenceError
 
 
 def _text_message(message_id: str, content: str) -> AgentMessage:
@@ -227,7 +227,7 @@ def test_resume_does_not_expand_archived_tool_result() -> None:
                             "tool_call_id": "call_1",
                             "compaction_state": "archived",
                             "archive_id": "ar_1",
-                            "archive_path": ".firstcoder/archives/sess_test/ar_1.txt",
+                            "archive_path": ".minicoder/archives/sess_test/ar_1.txt",
                         },
                     )
                 ],

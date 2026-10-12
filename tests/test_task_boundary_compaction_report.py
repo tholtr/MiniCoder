@@ -16,9 +16,9 @@ from benchmark.task_boundary_compaction.runner import (
     run_case,
     run_matrix,
 )
-from firstcoder.agent.loop_limits import AgentLoopLimits
-from firstcoder.providers.base import ChatProvider
-from firstcoder.providers.types import ChatRequest, ChatResponse, TokenUsage
+from minicoder.agent.loop_limits import AgentLoopLimits
+from minicoder.providers.base import ChatProvider
+from minicoder.providers.types import ChatRequest, ChatResponse, TokenUsage
 
 
 @dataclass

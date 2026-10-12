@@ -4,40 +4,40 @@ from __future__ import annotations
 
 import pytest
 
-from firstcoder.agent.processes import ProcessManager
-from firstcoder.agent.runtime_capabilities import (
+from minicoder.agent.processes import ProcessManager
+from minicoder.agent.runtime_capabilities import (
     AgentRuntimeCapabilities,
     benchmark_task_is_complex,
 )
-from firstcoder.providers.types import ToolDefinition
-from firstcoder.tools import ToolRegistry, create_builtin_registry
-from firstcoder.tools.edit import create_edit_tool
-from firstcoder.tools.fetch import create_fetch_tool
-from firstcoder.tools.glob import create_glob_tool
-from firstcoder.tools.grep import create_grep_tool
-from firstcoder.tools.ls import create_ls_tool
-from firstcoder.tools.tree import create_tree_tool
-from firstcoder.tools.view import create_view_tool
-from firstcoder.tools.write import create_write_tool
-from firstcoder.tools.delete import create_delete_tool
-from firstcoder.tools.apply_patch import create_apply_patch_tool
-from firstcoder.tools.diagnostics import create_diagnostics_tool
-from firstcoder.tools.python_exec import create_python_exec_tool
-from firstcoder.tools.shell import create_shell_tool
-from firstcoder.tools.task_boundary import create_task_boundary_tool
-from firstcoder.tools.think import create_think_tool
-from firstcoder.tools.read_multi import create_read_multi_tool
-from firstcoder.tools.ask_user import create_ask_user_tool
-from firstcoder.tools.session_registry import create_session_tool_registry
-from firstcoder.tools.task_create import create_task_create_tool
-from firstcoder.tools.task_list import create_task_list_tool
-from firstcoder.tools.task_revise import create_task_revise_tool
-from firstcoder.tools.task_update import create_task_update_tool
-from firstcoder.tools.types import Tool, make_text_result
-from firstcoder.tools.git_log import create_git_log_tool
-from firstcoder.tools.git_diff import create_git_diff_tool
-from firstcoder.tools.git_status import create_git_status_tool
-from firstcoder.tools.web_search import create_web_search_tool
+from minicoder.providers.types import ToolDefinition
+from minicoder.tools import ToolRegistry, create_builtin_registry
+from minicoder.tools.edit import create_edit_tool
+from minicoder.tools.fetch import create_fetch_tool
+from minicoder.tools.glob import create_glob_tool
+from minicoder.tools.grep import create_grep_tool
+from minicoder.tools.ls import create_ls_tool
+from minicoder.tools.tree import create_tree_tool
+from minicoder.tools.view import create_view_tool
+from minicoder.tools.write import create_write_tool
+from minicoder.tools.delete import create_delete_tool
+from minicoder.tools.apply_patch import create_apply_patch_tool
+from minicoder.tools.diagnostics import create_diagnostics_tool
+from minicoder.tools.python_exec import create_python_exec_tool
+from minicoder.tools.shell import create_shell_tool
+from minicoder.tools.task_boundary import create_task_boundary_tool
+from minicoder.tools.think import create_think_tool
+from minicoder.tools.read_multi import create_read_multi_tool
+from minicoder.tools.ask_user import create_ask_user_tool
+from minicoder.tools.session_registry import create_session_tool_registry
+from minicoder.tools.task_create import create_task_create_tool
+from minicoder.tools.task_list import create_task_list_tool
+from minicoder.tools.task_revise import create_task_revise_tool
+from minicoder.tools.task_update import create_task_update_tool
+from minicoder.tools.types import Tool, make_text_result
+from minicoder.tools.git_log import create_git_log_tool
+from minicoder.tools.git_diff import create_git_diff_tool
+from minicoder.tools.git_status import create_git_status_tool
+from minicoder.tools.web_search import create_web_search_tool
 
 
 def test_builtin_tool_descriptions_are_agent_facing_english(tmp_path):
@@ -101,31 +101,31 @@ def test_builtin_registry_can_hide_ask_user_for_noninteractive_runs(tmp_path):
 
 
 def test_each_tool_has_its_own_module():
-    assert create_ls_tool.__module__ == "firstcoder.tools.ls"
-    assert create_view_tool.__module__ == "firstcoder.tools.view"
-    assert create_grep_tool.__module__ == "firstcoder.tools.grep"
-    assert create_glob_tool.__module__ == "firstcoder.tools.glob"
-    assert create_tree_tool.__module__ == "firstcoder.tools.tree"
-    assert create_git_status_tool.__module__ == "firstcoder.tools.git_status"
-    assert create_git_diff_tool.__module__ == "firstcoder.tools.git_diff"
-    assert create_write_tool.__module__ == "firstcoder.tools.write"
-    assert create_edit_tool.__module__ == "firstcoder.tools.edit"
-    assert create_delete_tool.__module__ == "firstcoder.tools.delete"
-    assert create_fetch_tool.__module__ == "firstcoder.tools.fetch"
-    assert create_web_search_tool.__module__ == "firstcoder.tools.web_search"
-    assert create_apply_patch_tool.__module__ == "firstcoder.tools.apply_patch"
-    assert create_diagnostics_tool.__module__ == "firstcoder.tools.diagnostics"
-    assert create_python_exec_tool.__module__ == "firstcoder.tools.python_exec"
-    assert create_shell_tool.__module__ == "firstcoder.tools.shell"
-    assert create_task_boundary_tool.__module__ == "firstcoder.tools.task_boundary"
-    assert create_think_tool.__module__ == "firstcoder.tools.think"
-    assert create_read_multi_tool.__module__ == "firstcoder.tools.read_multi"
-    assert create_ask_user_tool.__module__ == "firstcoder.tools.ask_user"
-    assert create_task_create_tool.__module__ == "firstcoder.tools.task_create"
-    assert create_task_update_tool.__module__ == "firstcoder.tools.task_update"
-    assert create_task_revise_tool.__module__ == "firstcoder.tools.task_revise"
-    assert create_task_list_tool.__module__ == "firstcoder.tools.task_list"
-    assert create_git_log_tool.__module__ == "firstcoder.tools.git_log"
+    assert create_ls_tool.__module__ == "minicoder.tools.ls"
+    assert create_view_tool.__module__ == "minicoder.tools.view"
+    assert create_grep_tool.__module__ == "minicoder.tools.grep"
+    assert create_glob_tool.__module__ == "minicoder.tools.glob"
+    assert create_tree_tool.__module__ == "minicoder.tools.tree"
+    assert create_git_status_tool.__module__ == "minicoder.tools.git_status"
+    assert create_git_diff_tool.__module__ == "minicoder.tools.git_diff"
+    assert create_write_tool.__module__ == "minicoder.tools.write"
+    assert create_edit_tool.__module__ == "minicoder.tools.edit"
+    assert create_delete_tool.__module__ == "minicoder.tools.delete"
+    assert create_fetch_tool.__module__ == "minicoder.tools.fetch"
+    assert create_web_search_tool.__module__ == "minicoder.tools.web_search"
+    assert create_apply_patch_tool.__module__ == "minicoder.tools.apply_patch"
+    assert create_diagnostics_tool.__module__ == "minicoder.tools.diagnostics"
+    assert create_python_exec_tool.__module__ == "minicoder.tools.python_exec"
+    assert create_shell_tool.__module__ == "minicoder.tools.shell"
+    assert create_task_boundary_tool.__module__ == "minicoder.tools.task_boundary"
+    assert create_think_tool.__module__ == "minicoder.tools.think"
+    assert create_read_multi_tool.__module__ == "minicoder.tools.read_multi"
+    assert create_ask_user_tool.__module__ == "minicoder.tools.ask_user"
+    assert create_task_create_tool.__module__ == "minicoder.tools.task_create"
+    assert create_task_update_tool.__module__ == "minicoder.tools.task_update"
+    assert create_task_revise_tool.__module__ == "minicoder.tools.task_revise"
+    assert create_task_list_tool.__module__ == "minicoder.tools.task_list"
+    assert create_git_log_tool.__module__ == "minicoder.tools.git_log"
 
 
 def test_builtin_registry_can_include_mutation_tools_when_explicitly_enabled(tmp_path):
@@ -205,7 +205,7 @@ def test_builtin_registry_can_include_execution_tools_when_explicitly_enabled(tm
 
 
 def test_builtin_registry_includes_process_tools_when_manager_is_supplied(tmp_path):
-    manager = ProcessManager(log_root=tmp_path / ".firstcoder" / "processes")
+    manager = ProcessManager(log_root=tmp_path / ".minicoder" / "processes")
     registry = create_builtin_registry(
         tmp_path,
         include_execution_tools=True,
@@ -274,8 +274,8 @@ def test_registry_returns_error_for_unknown_tool():
 
 
 def test_session_registry_adds_four_authoritative_task_plan_tools(tmp_path):
-    from firstcoder.context.store import JsonlSessionStore
-    from firstcoder.context.writer import SessionEventWriter
+    from minicoder.context.store import JsonlSessionStore
+    from minicoder.context.writer import SessionEventWriter
 
     store = JsonlSessionStore(tmp_path)
     writer = SessionEventWriter(store=store, session_id="sess_plan")

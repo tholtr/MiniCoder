@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import shutil
 
-from firstcoder.context.store import JsonlSessionStore
+from minicoder.context.store import JsonlSessionStore
 
 
 def clone_recorded_session(

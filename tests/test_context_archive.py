@@ -3,10 +3,10 @@ import json
 
 import pytest
 
-from firstcoder.context.archive import ArchiveIntegrityError, ToolResultArchive
-from firstcoder.context.context_builder import ContextBuilder
-from firstcoder.context.models import AgentMessage, MessagePart, SessionView
-from firstcoder.context.versions import ARCHIVE_SCHEMA_VERSION
+from minicoder.context.archive import ArchiveIntegrityError, ToolResultArchive
+from minicoder.context.context_builder import ContextBuilder
+from minicoder.context.models import AgentMessage, MessagePart, SessionView
+from minicoder.context.versions import ARCHIVE_SCHEMA_VERSION
 
 
 def _part(content: str = "line\n" * 200) -> MessagePart:

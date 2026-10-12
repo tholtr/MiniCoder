@@ -1,10 +1,10 @@
-from firstcoder.mcp.search import (
+from minicoder.mcp.search import (
     MCP_TOOL_SEARCH_LIMIT,
     McpSearchEntry,
     create_mcp_tool_search,
     search_mcp_tools,
 )
-from firstcoder.providers.types import ToolDefinition
+from minicoder.providers.types import ToolDefinition
 
 
 def _entry(server: str, tool: str, description: str) -> McpSearchEntry:

@@ -5,15 +5,15 @@ from __future__ import annotations
 import subprocess
 import sys
 
-from firstcoder.agent.processes import ProcessManager
-from firstcoder.agent.session import create_project_permission_manager
-from firstcoder.permissions.types import PermissionMode
-from firstcoder.tools.diagnostics import create_diagnostics_tool
-from firstcoder.tools.python_exec import create_python_exec_tool
-from firstcoder.tools.shell import create_shell_tool
-from firstcoder.tools import create_builtin_registry
-from firstcoder.tools.permission_registry import PermissionAwareToolRegistry
-from firstcoder.utils.subprocess import CommandResult
+from minicoder.agent.processes import ProcessManager
+from minicoder.agent.session import create_project_permission_manager
+from minicoder.permissions.types import PermissionMode
+from minicoder.tools.diagnostics import create_diagnostics_tool
+from minicoder.tools.python_exec import create_python_exec_tool
+from minicoder.tools.shell import create_shell_tool
+from minicoder.tools import create_builtin_registry
+from minicoder.tools.permission_registry import PermissionAwareToolRegistry
+from minicoder.utils.subprocess import CommandResult
 
 
 def test_shell_executes_command_inside_root(tmp_path):
@@ -48,7 +48,7 @@ def test_shell_nonzero_exit_returns_stdout_and_stderr_to_model(tmp_path, monkeyp
             ok=False,
         )
 
-    monkeypatch.setattr("firstcoder.utils.execution_sandbox.run_command", fake_run)
+    monkeypatch.setattr("minicoder.utils.execution_sandbox.run_command", fake_run)
     registry = create_builtin_registry(tmp_path, include_execution_tools=True)
 
     result = registry.execute("shell", {"command": "compile"})
@@ -90,7 +90,7 @@ def test_shell_timeout_returns_partial_output_to_model(tmp_path, monkeypatch):
             error="命令执行超时",
         )
 
-    monkeypatch.setattr("firstcoder.utils.execution_sandbox.run_command", fake_run)
+    monkeypatch.setattr("minicoder.utils.execution_sandbox.run_command", fake_run)
     registry = create_builtin_registry(tmp_path, include_execution_tools=True)
 
     result = registry.execute("shell", {"command": "slow"})
@@ -148,7 +148,7 @@ def test_python_exec_nonzero_exit_returns_stderr_to_model(tmp_path, monkeypatch)
             ok=False,
         )
 
-    monkeypatch.setattr("firstcoder.utils.execution_sandbox.run_command", fake_run)
+    monkeypatch.setattr("minicoder.utils.execution_sandbox.run_command", fake_run)
     registry = create_builtin_registry(tmp_path, include_execution_tools=True)
 
     result = registry.execute("python_exec", {"code": "raise RuntimeError('boom')"})
@@ -169,13 +169,13 @@ def test_python_exec_rejects_cwd_outside_root(tmp_path):
 
 def test_python_exec_filters_sensitive_environment(monkeypatch, tmp_path):
     monkeypatch.setenv("OPENAI_API_KEY", "secret")
-    monkeypatch.setenv("FIRSTCODER_VISIBLE_TEST_FLAG", "visible")
+    monkeypatch.setenv("MINICODER_VISIBLE_TEST_FLAG", "visible")
     registry = create_builtin_registry(tmp_path, include_execution_tools=True)
 
     result = registry.execute(
         "python_exec",
         {
-            "code": ("import os; " "print(os.environ.get('OPENAI_API_KEY', '<missing>')); " "print(os.environ.get('FIRSTCODER_VISIBLE_TEST_FLAG', '<missing>'))"),
+            "code": ("import os; " "print(os.environ.get('OPENAI_API_KEY', '<missing>')); " "print(os.environ.get('MINICODER_VISIBLE_TEST_FLAG', '<missing>'))"),
         },
     )
 
@@ -190,30 +190,30 @@ def test_execution_tools_accept_explicit_non_sensitive_environment(tmp_path):
         [
             sys.executable,
             "-c",
-            "import os; print(os.environ['FIRSTCODER_TEST_FLAG'])",
+            "import os; print(os.environ['MINICODER_TEST_FLAG'])",
         ]
     )
     shell_result = registry.execute(
         "shell",
         {
             "command": shell_command,
-            "env": {"FIRSTCODER_TEST_FLAG": "shell-visible"},
+            "env": {"MINICODER_TEST_FLAG": "shell-visible"},
         },
     )
     python_result = registry.execute(
         "python_exec",
         {
-            "code": "import os; print(os.environ['FIRSTCODER_TEST_FLAG'])",
-            "env": {"FIRSTCODER_TEST_FLAG": "python-visible"},
+            "code": "import os; print(os.environ['MINICODER_TEST_FLAG'])",
+            "env": {"MINICODER_TEST_FLAG": "python-visible"},
         },
     )
 
     assert shell_result.ok is True
     assert shell_result.data["stdout"].strip() == "shell-visible"
-    assert shell_result.data["env_keys"] == ["FIRSTCODER_TEST_FLAG"]
+    assert shell_result.data["env_keys"] == ["MINICODER_TEST_FLAG"]
     assert python_result.ok is True
     assert python_result.data["stdout"].strip() == "python-visible"
-    assert python_result.data["env_keys"] == ["FIRSTCODER_TEST_FLAG"]
+    assert python_result.data["env_keys"] == ["MINICODER_TEST_FLAG"]
 
 
 def test_execution_tools_reject_explicit_sensitive_environment(tmp_path):
@@ -232,7 +232,7 @@ def test_execution_tools_reject_explicit_sensitive_environment(tmp_path):
 
 
 def test_process_tools_start_wait_for_readiness_read_logs_and_stop(tmp_path):
-    manager = ProcessManager(log_root=tmp_path / ".firstcoder" / "processes")
+    manager = ProcessManager(log_root=tmp_path / ".minicoder" / "processes")
     registry = create_builtin_registry(
         tmp_path,
         include_execution_tools=True,
@@ -254,7 +254,7 @@ def test_process_tools_start_wait_for_readiness_read_logs_and_stop(tmp_path):
                 "label": "demo service",
                 "ready_pattern": "READY",
                 "ready_timeout_seconds": 5,
-                "env": {"FIRSTCODER_TEST_FLAG": "visible"},
+                "env": {"MINICODER_TEST_FLAG": "visible"},
             },
         )
 
@@ -263,7 +263,7 @@ def test_process_tools_start_wait_for_readiness_read_logs_and_stop(tmp_path):
         process_id = process["process_id"]
         assert process["status"] == "running"
         assert process["ready"] is True
-        assert started.data["env_keys"] == ["FIRSTCODER_TEST_FLAG"]
+        assert started.data["env_keys"] == ["MINICODER_TEST_FLAG"]
 
         status = registry.execute("process_status", {"process_id": process_id})
         logs = registry.execute("process_logs", {"process_id": process_id})
@@ -281,7 +281,7 @@ def test_process_tools_start_wait_for_readiness_read_logs_and_stop(tmp_path):
 
 
 def test_process_start_reports_readiness_timeout_without_losing_process(tmp_path):
-    manager = ProcessManager(log_root=tmp_path / ".firstcoder" / "processes")
+    manager = ProcessManager(log_root=tmp_path / ".minicoder" / "processes")
     registry = create_builtin_registry(
         tmp_path,
         include_execution_tools=True,
@@ -308,7 +308,7 @@ def test_process_start_reports_readiness_timeout_without_losing_process(tmp_path
 
 
 def test_process_start_rejects_sensitive_environment(tmp_path):
-    manager = ProcessManager(log_root=tmp_path / ".firstcoder" / "processes")
+    manager = ProcessManager(log_root=tmp_path / ".minicoder" / "processes")
     registry = create_builtin_registry(
         tmp_path,
         include_execution_tools=True,
@@ -317,11 +317,11 @@ def test_process_start_rejects_sensitive_environment(tmp_path):
 
     result = registry.execute(
         "process_start",
-        {"command": "echo no", "env": {"FIRSTCODER_API_TOKEN": "secret"}},
+        {"command": "echo no", "env": {"MINICODER_API_TOKEN": "secret"}},
     )
 
     assert result.ok is False
-    assert result.data["rejected_env_keys"] == ["FIRSTCODER_API_TOKEN"]
+    assert result.data["rejected_env_keys"] == ["MINICODER_API_TOKEN"]
     assert manager.list() == []
 
 
@@ -336,7 +336,7 @@ def test_diagnostics_runs_pytest(monkeypatch, tmp_path):
             ok=True,
         )
 
-    monkeypatch.setattr("firstcoder.utils.execution_sandbox.run_command", fake_run)
+    monkeypatch.setattr("minicoder.utils.execution_sandbox.run_command", fake_run)
     registry = create_builtin_registry(tmp_path)
 
     result = registry.execute("diagnostics")
@@ -357,7 +357,7 @@ def test_diagnostics_failure_returns_test_output_to_model(monkeypatch, tmp_path)
             ok=False,
         )
 
-    monkeypatch.setattr("firstcoder.utils.execution_sandbox.run_command", fake_run)
+    monkeypatch.setattr("minicoder.utils.execution_sandbox.run_command", fake_run)
     registry = create_builtin_registry(tmp_path)
 
     result = registry.execute("diagnostics")

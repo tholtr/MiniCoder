@@ -41,11 +41,11 @@ def _write_env(path: Path) -> None:
     path.write_text(
         "\n".join(
             [
-                "FIRSTCODER_PROVIDER=openai-compatible",
-                "FIRSTCODER_PROVIDER_NAME=test-provider",
-                "FIRSTCODER_MODEL=test-model",
-                "FIRSTCODER_BASE_URL=https://example.test/v1",
-                "FIRSTCODER_API_KEY=super-secret-value",
+                "MINICODER_PROVIDER=openai-compatible",
+                "MINICODER_PROVIDER_NAME=test-provider",
+                "MINICODER_MODEL=test-model",
+                "MINICODER_BASE_URL=https://example.test/v1",
+                "MINICODER_API_KEY=super-secret-value",
             ]
         ),
         encoding="utf-8",
@@ -77,7 +77,7 @@ def test_preflight_checks_provider_docker_cache_network_and_images_without_leaki
     ]
     rendered = render_report(report)
     assert "super-secret-value" not in rendered
-    assert "FIRSTCODER_API_KEY" not in rendered
+    assert "MINICODER_API_KEY" not in rendered
     assert (tmp_path / "cache").is_dir()
 
 
@@ -107,11 +107,11 @@ def test_preflight_fails_when_configured_model_is_absent_from_provider_catalog(t
 def test_preflight_fails_for_placeholder_provider_values_and_required_empty_wheelhouse(tmp_path: Path) -> None:
     env_file = tmp_path / ".env.harbor"
     env_file.write_text(
-        "FIRSTCODER_PROVIDER=openai-compatible\n"
-        "FIRSTCODER_PROVIDER_NAME=your-provider\n"
-        "FIRSTCODER_MODEL=your-model\n"
-        "FIRSTCODER_BASE_URL=https://provider.example/v1\n"
-        "FIRSTCODER_API_KEY=replace-with-your-api-key\n",
+        "MINICODER_PROVIDER=openai-compatible\n"
+        "MINICODER_PROVIDER_NAME=your-provider\n"
+        "MINICODER_MODEL=your-model\n"
+        "MINICODER_BASE_URL=https://provider.example/v1\n"
+        "MINICODER_API_KEY=replace-with-your-api-key\n",
         encoding="utf-8",
     )
     wheelhouse = tmp_path / "wheelhouse"
@@ -135,9 +135,9 @@ def test_preflight_fails_for_placeholder_provider_values_and_required_empty_whee
 def test_build_mounts_uses_writable_cache_and_read_only_wheelhouse(tmp_path: Path) -> None:
     mounts = build_mounts(tmp_path / "cache", tmp_path / "wheelhouse")
 
-    assert mounts[0]["target"] == "/opt/firstcoder-cache"
+    assert mounts[0]["target"] == "/opt/minicoder-cache"
     assert "read_only" not in mounts[0]
-    assert mounts[1]["target"] == "/opt/firstcoder-wheelhouse"
+    assert mounts[1]["target"] == "/opt/minicoder-wheelhouse"
     assert mounts[1]["read_only"] is True
 
 
@@ -221,10 +221,10 @@ def test_fixed_ab_command_is_single_concurrency_and_uses_safe_env_references(tmp
         if value == "--agent-kwarg"
     ]
     assert "max_turn_seconds=3300" in agent_kwargs
-    assert "FIRSTCODER_API_KEY=${FIRSTCODER_API_KEY}" in command
-    assert "FIRSTCODER_MODEL=model" in command
-    assert "FIRSTCODER_DISABLE_GLOBAL_SKILLS=${FIRSTCODER_DISABLE_GLOBAL_SKILLS:-1}" in command
-    assert "FIRSTCODER_WHEELHOUSE_ONLY=1" in command
+    assert "MINICODER_API_KEY=${MINICODER_API_KEY}" in command
+    assert "MINICODER_MODEL=model" in command
+    assert "MINICODER_DISABLE_GLOBAL_SKILLS=${MINICODER_DISABLE_GLOBAL_SKILLS:-1}" in command
+    assert "MINICODER_WHEELHOUSE_ONLY=1" in command
     mounts = json.loads(command[command.index("--mounts") + 1])
     assert mounts[1]["read_only"] is True
 
@@ -323,7 +323,7 @@ def _write_trial(
                 },
             },
         ]
-        (agent_dir / "firstcoder-session.jsonl").write_text(
+        (agent_dir / "minicoder-session.jsonl").write_text(
             "\n".join(json.dumps(event) for event in events) + "\n",
             encoding="utf-8",
         )

@@ -4,8 +4,8 @@ from dataclasses import dataclass, field
 
 import pytest
 
-import firstcoder.cli as cli
-from firstcoder.cli import CliConfig, main, read_message, run_repl
+import minicoder.cli as cli
+from minicoder.cli import CliConfig, main, read_message, run_repl
 
 
 @dataclass
@@ -178,8 +178,8 @@ def test_main_config_path_prints_global_and_project_paths(tmp_path: Path, monkey
 
     output = capsys.readouterr().out
     assert exit_code == 0
-    assert f"global: {tmp_path / 'xdg' / 'firstcoder' / 'config.toml'}" in output
-    assert f"project: {tmp_path / 'firstcoder.toml'}" in output
+    assert f"global: {tmp_path / 'xdg' / 'minicoder' / 'config.toml'}" in output
+    assert f"project: {tmp_path / 'minicoder.toml'}" in output
 
 
 def test_main_config_init_creates_global_config(tmp_path: Path, monkeypatch, capsys):
@@ -187,7 +187,7 @@ def test_main_config_init_creates_global_config(tmp_path: Path, monkeypatch, cap
 
     exit_code = main(["config", "init"])
 
-    config_path = tmp_path / "xdg" / "firstcoder" / "config.toml"
+    config_path = tmp_path / "xdg" / "minicoder" / "config.toml"
     assert exit_code == 0
     assert config_path.exists()
     assert "api_key_env" in config_path.read_text(encoding="utf-8")
@@ -209,7 +209,7 @@ def test_main_mcp_add_remote_accepts_bearer_token_environment_variable(tmp_path:
         ]
     )
 
-    config = (tmp_path / "xdg" / "firstcoder" / "config.toml").read_text(encoding="utf-8")
+    config = (tmp_path / "xdg" / "minicoder" / "config.toml").read_text(encoding="utf-8")
     assert exit_code == 0
     assert 'bearer_token_env_var = "GITHUB_PAT_TOKEN"' in config
     assert "Added remote MCP server: github" in capsys.readouterr().out
@@ -217,7 +217,7 @@ def test_main_mcp_add_remote_accepts_bearer_token_environment_variable(tmp_path:
 
 def test_main_config_init_refuses_to_overwrite_without_force(tmp_path: Path, monkeypatch, capsys):
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
-    config_path = tmp_path / "xdg" / "firstcoder" / "config.toml"
+    config_path = tmp_path / "xdg" / "minicoder" / "config.toml"
     config_path.parent.mkdir(parents=True)
     config_path.write_text("existing", encoding="utf-8")
 
@@ -229,9 +229,9 @@ def test_main_config_init_refuses_to_overwrite_without_force(tmp_path: Path, mon
 
 
 def test_main_config_show_uses_project_config_without_leaking_key(tmp_path: Path, monkeypatch, capsys):
-    monkeypatch.delenv("FIRSTCODER_PROVIDER", raising=False)
+    monkeypatch.delenv("MINICODER_PROVIDER", raising=False)
     monkeypatch.setenv("YURENAPI_API_KEY", "secret-key")
-    (tmp_path / "firstcoder.toml").write_text(
+    (tmp_path / "minicoder.toml").write_text(
         "\n".join(
             [
                 'default_model = "yurenapi/gpt-5.5"',
@@ -258,9 +258,9 @@ def test_main_config_show_uses_project_config_without_leaking_key(tmp_path: Path
 
 
 def test_main_config_show_lists_catalog_refs_without_secrets_or_state(tmp_path: Path, monkeypatch, capsys):
-    monkeypatch.delenv("FIRSTCODER_PROVIDER", raising=False)
+    monkeypatch.delenv("MINICODER_PROVIDER", raising=False)
     monkeypatch.setenv("YURENAPI_API_KEY", "secret-key")
-    (tmp_path / "firstcoder.toml").write_text(
+    (tmp_path / "minicoder.toml").write_text(
         "\n".join(
             [
                 'default_model = "yuren/gpt-5.6-terra"',
@@ -281,8 +281,8 @@ def test_main_config_show_lists_catalog_refs_without_secrets_or_state(tmp_path: 
         ),
         encoding="utf-8",
     )
-    (tmp_path / ".firstcoder" / "model_state.json").parent.mkdir(parents=True)
-    (tmp_path / ".firstcoder" / "model_state.json").write_text(
+    (tmp_path / ".minicoder" / "model_state.json").parent.mkdir(parents=True)
+    (tmp_path / ".minicoder" / "model_state.json").write_text(
         '{"last_selected":"yuren/gpt-5.6-terra","recent":["openai/gpt-5.5"]}',
         encoding="utf-8",
     )
@@ -348,7 +348,7 @@ def test_run_repl_sends_multiple_user_messages(capsys):
     run_repl(runner, ["hello", "continue"])
 
     assert runner.turns == ["hello", "continue"]
-    assert capsys.readouterr().out == "FirstCoder> first reply\nFirstCoder> second reply\n"
+    assert capsys.readouterr().out == "MiniCoder> first reply\nMiniCoder> second reply\n"
 
 
 def test_run_repl_routes_next_line_to_pending_permission(capsys):
@@ -364,7 +364,7 @@ def test_run_repl_routes_next_line_to_pending_permission(capsys):
 
     assert runner.turns == ["write file"]
     assert runner.resumes == [("perm_1", "allow_once")]
-    assert capsys.readouterr().out == ("FirstCoder> need permission\n" "Permission> Allow?\n" "Choose:\n" "  1. Deny\n" "  2. Allow once\n" "  3. Allow always for same scope\n" "FirstCoder> done\n")
+    assert capsys.readouterr().out == ("MiniCoder> need permission\n" "Permission> Allow?\n" "Choose:\n" "  1. Deny\n" "  2. Allow once\n" "  3. Allow always for same scope\n" "MiniCoder> done\n")
 
 
 def test_run_repl_accepts_human_permission_aliases(capsys):
@@ -653,11 +653,11 @@ def test_create_cli_app_disables_user_input_only_for_benchmark(tmp_path: Path, m
     class FakeApp:
         chat_runner = FakeRunner()
 
-    def fake_create_firstcoder_app(**kwargs):
+    def fake_create_minicoder_app(**kwargs):
         seen.append(kwargs["allow_user_input"])
         return FakeApp()
 
-    monkeypatch.setattr(cli, "create_firstcoder_app", fake_create_firstcoder_app)
+    monkeypatch.setattr(cli, "create_minicoder_app", fake_create_minicoder_app)
 
     cli.create_cli_app(
         CliConfig(

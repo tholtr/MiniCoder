@@ -29,13 +29,13 @@ FIXED_TASKS = (
     "tune-mjcf",
 )
 DATASET = "terminal-bench@2.0"
-AGENT_IMPORT_PATH = "benchmark.harbor.shared.firstcoder_agent:FirstCoderHarborAgent"
+AGENT_IMPORT_PATH = "benchmark.harbor.shared.minicoder_agent:MiniCoderHarborAgent"
 PASSTHROUGH_VARIABLES = (
-    "FIRSTCODER_PROVIDER",
-    "FIRSTCODER_PROVIDER_NAME",
-    "FIRSTCODER_MODEL",
-    "FIRSTCODER_BASE_URL",
-    "FIRSTCODER_API_KEY",
+    "MINICODER_PROVIDER",
+    "MINICODER_PROVIDER_NAME",
+    "MINICODER_MODEL",
+    "MINICODER_BASE_URL",
+    "MINICODER_API_KEY",
 )
 
 
@@ -85,16 +85,16 @@ def build_harbor_command(
     if reasoning_effort:
         command.extend(["--agent-kwarg", f"reasoning_effort={reasoning_effort}"])
     for name in PASSTHROUGH_VARIABLES:
-        value = model if name == "FIRSTCODER_MODEL" else f"${{{name}}}"
+        value = model if name == "MINICODER_MODEL" else f"${{{name}}}"
         command.extend(["--agent-env", f"{name}={value}"])
     command.extend(
         [
             "--agent-env",
-            "FIRSTCODER_DISABLE_GLOBAL_SKILLS=${FIRSTCODER_DISABLE_GLOBAL_SKILLS:-1}",
+            "MINICODER_DISABLE_GLOBAL_SKILLS=${MINICODER_DISABLE_GLOBAL_SKILLS:-1}",
         ]
     )
     if wheelhouse_only:
-        command.extend(["--agent-env", "FIRSTCODER_WHEELHOUSE_ONLY=1"])
+        command.extend(["--agent-env", "MINICODER_WHEELHOUSE_ONLY=1"])
     command.extend(
         [
             "--mounts",
@@ -113,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--cache-dir",
         type=Path,
-        default=Path.home() / ".cache" / "firstcoder-harbor",
+        default=Path.home() / ".cache" / "minicoder-harbor",
     )
     parser.add_argument("--wheelhouse", type=Path)
     parser.add_argument("--wheelhouse-only", action="store_true")
@@ -162,14 +162,14 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
     output_dir = args.output_root / f"terminal-bench-ab-{args.label}"
-    model = args.model or values.get("FIRSTCODER_MODEL", "")
+    model = args.model or values.get("MINICODER_MODEL", "")
     command = build_harbor_command(
         harbor_executable=args.harbor_executable,
         env_file=args.env_file,
         output_dir=output_dir,
         cache_dir=args.cache_dir,
         wheelhouse_dir=args.wheelhouse,
-        provider_name=values.get("FIRSTCODER_PROVIDER_NAME", ""),
+        provider_name=values.get("MINICODER_PROVIDER_NAME", ""),
         model=model,
         max_tool_rounds=args.max_tool_rounds,
         max_turn_seconds=args.max_turn_seconds,

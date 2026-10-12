@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from benchmark.task_boundary_compaction.provider_observer import RecordingProvider, usage_totals
-from firstcoder.agent.task_boundary_classifier import CLASSIFICATION_MAX_TOKENS
-from firstcoder.providers.base import ChatProvider
-from firstcoder.providers.types import (
+from minicoder.agent.task_boundary_classifier import CLASSIFICATION_MAX_TOKENS
+from minicoder.providers.base import ChatProvider
+from minicoder.providers.types import (
     ChatMessage,
     ChatRequest,
     ChatResponse,
@@ -60,7 +60,7 @@ def _l4_request() -> ChatRequest:
         messages=[
             ChatMessage(
                 role="system",
-                content="你是 FirstCoder 的上下文压缩器。输出简洁的 coding handoff；",
+                content="你是 MiniCoder 的上下文压缩器。输出简洁的 coding handoff；",
             ),
             ChatMessage(role="user", content="摘要这段上下文"),
         ],

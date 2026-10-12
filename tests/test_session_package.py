@@ -1,4 +1,4 @@
-from firstcoder.session import (
+from minicoder.session import (
     RedactionOptions,
     SessionCorruptError,
     SessionEmptyError,
@@ -12,7 +12,7 @@ from firstcoder.session import (
     TranscriptBuilder,
     TranscriptEntry,
 )
-from firstcoder.session.catalog import SessionCatalog
+from minicoder.session.catalog import SessionCatalog
 
 
 def test_session_package_exports_core_models_and_errors() -> None:

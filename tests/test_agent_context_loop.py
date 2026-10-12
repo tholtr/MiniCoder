@@ -8,23 +8,23 @@ import time
 
 import pytest
 
-from firstcoder.agent.loop import AgentLoop, ToolExecutionEvent
-from firstcoder.agent.task_boundary_classifier import CLASSIFICATION_PROMPT
-from firstcoder.agent.loop_limits import AgentLoopLimits
-from firstcoder.agent.user_input import AgentTurnStatus
-from firstcoder.agent.session import AgentSession
-from firstcoder.context.manager import ContextCompactResult, ContextWindowTrigger
-from firstcoder.context.runtime_replay import replay_runtime_state
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.input.attachments import attach_path
-from firstcoder.runtime.cancellation import CancellationToken
-from firstcoder.permissions.types import PermissionMode
-from firstcoder.mcp.adapter import adapt_mcp_tool
-from firstcoder.mcp.models import McpToolDescription
-from firstcoder.mcp.search import McpSearchEntry, create_mcp_tool_search
-from firstcoder.providers.base import ChatProvider
-from firstcoder.providers.errors import ProviderError, ProviderErrorKind
-from firstcoder.providers.types import (
+from minicoder.agent.loop import AgentLoop, ToolExecutionEvent
+from minicoder.agent.task_boundary_classifier import CLASSIFICATION_PROMPT
+from minicoder.agent.loop_limits import AgentLoopLimits
+from minicoder.agent.user_input import AgentTurnStatus
+from minicoder.agent.session import AgentSession
+from minicoder.context.manager import ContextCompactResult, ContextWindowTrigger
+from minicoder.context.runtime_replay import replay_runtime_state
+from minicoder.context.store import JsonlSessionStore
+from minicoder.input.attachments import attach_path
+from minicoder.runtime.cancellation import CancellationToken
+from minicoder.permissions.types import PermissionMode
+from minicoder.mcp.adapter import adapt_mcp_tool
+from minicoder.mcp.models import McpToolDescription
+from minicoder.mcp.search import McpSearchEntry, create_mcp_tool_search
+from minicoder.providers.base import ChatProvider
+from minicoder.providers.errors import ProviderError, ProviderErrorKind
+from minicoder.providers.types import (
     ChatRequest,
     ChatResponse,
     ChatStreamEvent,
@@ -34,12 +34,12 @@ from firstcoder.providers.types import (
     ToolChoiceFunction,
     ToolDefinition,
 )
-from firstcoder.tools.task_boundary import create_task_boundary_tool
-from firstcoder.tools.ask_user import create_ask_user_tool
-from firstcoder.tools.write import create_write_tool
-from firstcoder.tools.edit import create_edit_tool
-from firstcoder.tools.shell import create_shell_tool
-from firstcoder.tools.types import Tool, ToolResult
+from minicoder.tools.task_boundary import create_task_boundary_tool
+from minicoder.tools.ask_user import create_ask_user_tool
+from minicoder.tools.write import create_write_tool
+from minicoder.tools.edit import create_edit_tool
+from minicoder.tools.shell import create_shell_tool
+from minicoder.tools.types import Tool, ToolResult
 
 
 def _run_streaming(loop: AgentLoop, content: str):
@@ -615,7 +615,7 @@ def test_agent_loop_appends_user_and_assistant_messages(tmp_path) -> None:
 def test_agent_loop_projects_image_attachment_into_provider_request(tmp_path) -> None:
     image = tmp_path / "image.png"
     image.write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01")
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.create(store=store, session_id="sess_image_request")
     provider = FakeProvider(
         [ChatResponse(provider="fake", model="fake-model", content="收到图片")],
@@ -638,7 +638,7 @@ def test_agent_loop_projects_image_attachment_into_provider_request(tmp_path) ->
 def test_agent_loop_rejects_image_when_provider_does_not_declare_vision(tmp_path) -> None:
     image = tmp_path / "image.png"
     image.write_bytes(b"\x89PNG\r\n\x1a\n")
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.create(store=store, session_id="sess_image_unsupported")
     provider = FakeProvider([ChatResponse(provider="fake", model="fake-model", content="unused")])
 
@@ -803,7 +803,7 @@ def test_agent_loop_runs_readonly_tool_calls_in_parallel_and_appends_results_in_
 
 
 def test_agent_loop_runs_bypass_allowed_tool_calls_in_parallel(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     execution_intervals: dict[str, tuple[float, float]] = {}
     session = AgentSession.from_project(
         store=store,
@@ -2627,7 +2627,7 @@ def test_agent_loop_converts_cancellation_during_task_plan_reconciliation_to_int
 
 
 def test_agent_loop_propagates_prewrite_review_from_task_plan_reconciliation_without_duplicate_call(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_task_plan_review_pause",
@@ -2710,7 +2710,7 @@ def test_agent_loop_propagates_prewrite_review_from_task_plan_reconciliation_wit
 
 
 def test_permission_resume_does_not_repeat_task_plan_reconciliation_for_same_user_turn(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_task_plan_review_once",
@@ -2767,7 +2767,7 @@ def test_permission_resume_does_not_repeat_task_plan_reconciliation_for_same_use
 
 
 def test_agent_loop_streaming_propagates_prewrite_review_from_task_plan_reconciliation_without_duplicate_call(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_stream_task_plan_review_pause",
@@ -3328,7 +3328,7 @@ def test_agent_loop_skips_remaining_parallel_tools_when_waiting_for_user(tmp_pat
 
 
 def test_agent_loop_permission_pause_does_not_append_confirmation_tool_result(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_pause",
@@ -3374,7 +3374,7 @@ def test_agent_loop_permission_pause_does_not_append_confirmation_tool_result(tm
 
 
 def test_agent_loop_bypass_mode_emits_prewrite_review_and_executes_without_confirmation(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_review_bypass",
@@ -3421,7 +3421,7 @@ def test_agent_loop_bypass_mode_emits_prewrite_review_and_executes_without_confi
 
 
 def test_agent_loop_streaming_bypass_mode_emits_prewrite_review_without_confirmation(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_stream_review_bypass",
@@ -3469,7 +3469,7 @@ def test_agent_loop_streaming_bypass_mode_emits_prewrite_review_without_confirma
 def test_agent_loop_bypass_mode_blocks_mutation_when_prewrite_review_fails(tmp_path) -> None:
     target = tmp_path / "app.py"
     target.write_text("old\nold\n", encoding="utf-8")
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_review_failed_bypass",
@@ -3507,7 +3507,7 @@ def test_agent_loop_bypass_mode_blocks_mutation_when_prewrite_review_fails(tmp_p
 
 
 def test_agent_loop_shell_permission_does_not_claim_precomputed_diff(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_shell_no_review",
@@ -3536,7 +3536,7 @@ def test_agent_loop_shell_permission_does_not_claim_precomputed_diff(tmp_path) -
 def test_agent_loop_blocks_mutation_when_prewrite_review_cannot_be_built(tmp_path) -> None:
     target = tmp_path / "app.py"
     target.write_text("old\nold\n", encoding="utf-8")
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_review_failed",
@@ -3577,7 +3577,7 @@ def test_agent_loop_blocks_mutation_when_prewrite_review_cannot_be_built(tmp_pat
 
 
 def test_agent_loop_permission_deny_appends_denied_result_and_continues(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_deny",
@@ -3623,7 +3623,7 @@ def test_agent_loop_permission_deny_appends_denied_result_and_continues(tmp_path
 
 
 def test_permission_resume_preserves_provider_call_budget_for_same_user_turn(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_provider_budget",
@@ -3663,7 +3663,7 @@ def test_permission_resume_preserves_provider_call_budget_for_same_user_turn(tmp
 
 
 def test_permission_resume_preserves_turn_start_time_for_same_user_turn(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_time_budget",
@@ -3705,7 +3705,7 @@ def test_permission_resume_preserves_turn_start_time_for_same_user_turn(tmp_path
 
 
 def test_permission_resume_preserves_tool_round_budget_for_same_user_turn(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_tool_budget",
@@ -3745,7 +3745,7 @@ def test_permission_resume_preserves_tool_round_budget_for_same_user_turn(tmp_pa
 
 
 def test_agent_loop_permission_reject_with_feedback_returns_feedback_to_model(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_feedback",
@@ -3786,7 +3786,7 @@ def test_agent_loop_permission_reject_with_feedback_returns_feedback_to_model(tm
 
 
 def test_agent_loop_permission_allow_once_executes_without_grant(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_once",
@@ -3828,7 +3828,7 @@ def test_agent_loop_permission_allow_once_executes_without_grant(tmp_path) -> No
 
 
 def test_agent_loop_permission_allow_once_rejects_stale_prewrite_review(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_stale_review",
@@ -3870,7 +3870,7 @@ def test_agent_loop_permission_allow_once_rejects_stale_prewrite_review(tmp_path
 
 
 def test_agent_loop_permission_allow_always_adds_grant_and_executes(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_always",
@@ -3910,7 +3910,7 @@ def test_agent_loop_permission_allow_always_adds_grant_and_executes(tmp_path) ->
 
 
 def test_agent_loop_permission_resume_rejects_unknown_request_id(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_unknown",
@@ -3947,7 +3947,7 @@ def test_agent_loop_permission_resume_rejects_unknown_request_id(tmp_path) -> No
 
 
 def test_agent_loop_permission_pending_blocks_new_user_turn_until_resolved(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_blocks_turn",
@@ -3988,7 +3988,7 @@ def test_agent_loop_permission_pending_blocks_new_user_turn_until_resolved(tmp_p
 
 
 def test_agent_loop_permission_resume_skips_remaining_parallel_tools(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_parallel",
@@ -4032,7 +4032,7 @@ def test_agent_loop_permission_resume_skips_remaining_parallel_tools(tmp_path) -
 
 
 def test_agent_loop_permission_resume_uses_local_pending_not_ui_payload(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_payload",
@@ -4076,7 +4076,7 @@ def test_agent_loop_permission_resume_uses_local_pending_not_ui_payload(tmp_path
 
 
 def test_agent_loop_permission_resume_ignores_nested_ui_argument_tampering(tmp_path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     session = AgentSession.from_project(
         store=store,
         session_id="sess_perm_nested_payload",

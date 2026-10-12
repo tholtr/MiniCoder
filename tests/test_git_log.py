@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from firstcoder.tools.git_log import create_git_log_tool
-from firstcoder.utils import git as git_utils
+from minicoder.tools.git_log import create_git_log_tool
+from minicoder.utils import git as git_utils
 
 
 def _completed(args, returncode=0, stdout="", stderr=""):

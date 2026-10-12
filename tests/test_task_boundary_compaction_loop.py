@@ -7,11 +7,11 @@ import pytest
 
 from benchmark.task_boundary_compaction.loop import BenchmarkAgentLoop
 from benchmark.task_boundary_compaction.models import Arm
-from firstcoder.agent.session import AgentSession
-from firstcoder.context.manager import ContextCompactResult, ContextWindowTrigger
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.providers.base import ChatProvider
-from firstcoder.providers.types import ChatRequest, ChatResponse
+from minicoder.agent.session import AgentSession
+from minicoder.context.manager import ContextCompactResult, ContextWindowTrigger
+from minicoder.context.store import JsonlSessionStore
+from minicoder.providers.base import ChatProvider
+from minicoder.providers.types import ChatRequest, ChatResponse
 
 
 @dataclass

@@ -4,19 +4,19 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from firstcoder.agent.loop import AgentLoop
-from firstcoder.agent.loop_limits import AgentLoopLimits
-from firstcoder.agent.provider_retry import ProviderRetryPolicy
-from firstcoder.agent.session import AgentSession
-from firstcoder.agent.telemetry import AgentTurnTelemetry
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.providers.base import ChatProvider
-from firstcoder.providers.errors import ProviderError, ProviderErrorKind
-from firstcoder.providers.types import ChatRequest, ChatResponse, ToolCall
-from firstcoder.runtime.cancellation import CancellationToken
-from firstcoder.runtime.cancellation import AgentCancelledError
-from firstcoder.tools.ask_user import create_ask_user_tool
-from firstcoder.tools.types import ToolResult
+from minicoder.agent.loop import AgentLoop
+from minicoder.agent.loop_limits import AgentLoopLimits
+from minicoder.agent.provider_retry import ProviderRetryPolicy
+from minicoder.agent.session import AgentSession
+from minicoder.agent.telemetry import AgentTurnTelemetry
+from minicoder.context.store import JsonlSessionStore
+from minicoder.providers.base import ChatProvider
+from minicoder.providers.errors import ProviderError, ProviderErrorKind
+from minicoder.providers.types import ChatRequest, ChatResponse, ToolCall
+from minicoder.runtime.cancellation import CancellationToken
+from minicoder.runtime.cancellation import AgentCancelledError
+from minicoder.tools.ask_user import create_ask_user_tool
+from minicoder.tools.types import ToolResult
 
 
 @dataclass

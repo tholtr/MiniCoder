@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from firstcoder.context.models import AgentMessage, MessagePart
-from firstcoder.context.tool_lifecycle import ToolResultLifecycle, index_tool_result_lifecycles
+from minicoder.context.models import AgentMessage, MessagePart
+from minicoder.context.tool_lifecycle import ToolResultLifecycle, index_tool_result_lifecycles
 
 
 def _call(call_id: str, name: str, arguments: dict[str, object] | None = None) -> AgentMessage:

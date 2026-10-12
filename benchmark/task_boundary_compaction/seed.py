@@ -6,10 +6,10 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from math import ceil
 
-from firstcoder.agent.session import AgentSession
-from firstcoder.context.models import SessionView
-from firstcoder.context.token_budget import ContextBudget
-from firstcoder.providers.types import ChatResponse
+from minicoder.agent.session import AgentSession
+from minicoder.context.models import SessionView
+from minicoder.context.token_budget import ContextBudget
+from minicoder.providers.types import ChatResponse
 
 
 @dataclass(frozen=True, slots=True)

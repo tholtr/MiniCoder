@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from firstcoder.agent.session import AgentSession
-from firstcoder.agent.tool_execution import ToolExecutor
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.providers.types import ToolCall
-from firstcoder.tools.types import ToolResult
+from minicoder.agent.session import AgentSession
+from minicoder.agent.tool_execution import ToolExecutor
+from minicoder.context.store import JsonlSessionStore
+from minicoder.providers.types import ToolCall
+from minicoder.tools.types import ToolResult
 
 
 def _fake_execute(self, tool_call: ToolCall) -> ToolResult:
@@ -63,7 +63,7 @@ def test_single_tool_parallel_batch_skips_thread_pool(tmp_path) -> None:
     calls = _read_calls("grep")
 
     with patch.object(ToolExecutor, "execute_single", return_value=ToolResult(name="grep", ok=True, content="ok")) as mock_single:
-        with patch("firstcoder.agent.tool_execution.ThreadPoolExecutor") as mock_pool:
+        with patch("minicoder.agent.tool_execution.ThreadPoolExecutor") as mock_pool:
             state = executor.execute_interactive(calls)
 
     mock_single.assert_called_once()

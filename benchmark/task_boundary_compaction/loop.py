@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from firstcoder.agent.loop import AgentLoop
-from firstcoder.context.manager import ContextWindowTrigger
+from minicoder.agent.loop import AgentLoop
+from minicoder.context.manager import ContextWindowTrigger
 
 from benchmark.task_boundary_compaction.models import Arm
 

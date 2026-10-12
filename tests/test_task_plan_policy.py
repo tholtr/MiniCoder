@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from firstcoder.agent.task_plan_policy import TaskPlanPolicy
-from firstcoder.planning.models import Task, TaskPlan
+from minicoder.agent.task_plan_policy import TaskPlanPolicy
+from minicoder.planning.models import Task, TaskPlan
 
 
 @dataclass

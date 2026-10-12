@@ -1,5 +1,5 @@
-from firstcoder.app.mcp_commands import McpCommandHandler
-from firstcoder.mcp.models import McpServerStatus
+from minicoder.app.mcp_commands import McpCommandHandler
+from minicoder.mcp.models import McpServerStatus
 
 
 class FakeMcpManager:

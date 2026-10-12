@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from firstcoder.agent.worktree import (
+from minicoder.agent.worktree import (
     WORKTREE_DIRNAME,
     Worktree,
     WorktreeError,

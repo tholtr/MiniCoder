@@ -2,22 +2,22 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from firstcoder.context.compaction import CompactionEvent, CompactionResult
-from firstcoder.context.checkpoint import Checkpoint
-from firstcoder.context.events import SessionEvent
-from firstcoder.context.llm_compact import LlmCompactCandidate, LlmCompactEvent
-from firstcoder.context.manager import (
+from minicoder.context.compaction import CompactionEvent, CompactionResult
+from minicoder.context.checkpoint import Checkpoint
+from minicoder.context.events import SessionEvent
+from minicoder.context.llm_compact import LlmCompactCandidate, LlmCompactEvent
+from minicoder.context.manager import (
     ContextCompactMode,
     ContextCompactRequest,
     ContextWindowManager,
     ContextWindowTrigger,
 )
-from firstcoder.context.models import AgentMessage, MessagePart, SessionView
-from firstcoder.context.runtime_state import SessionRuntimeState
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.context.token_budget import ContextBudget
-from firstcoder.context.triggers import ContextCompactionConfig
-from firstcoder.context.writer import SessionEventWriter
+from minicoder.context.models import AgentMessage, MessagePart, SessionView
+from minicoder.context.runtime_state import SessionRuntimeState
+from minicoder.context.store import JsonlSessionStore
+from minicoder.context.token_budget import ContextBudget
+from minicoder.context.triggers import ContextCompactionConfig
+from minicoder.context.writer import SessionEventWriter
 
 
 class FakePipeline:

@@ -1,4 +1,4 @@
-"""为 Linux/Python 3.11 Harbor 容器准备 FirstCoder 依赖 wheelhouse。"""
+"""为 Linux/Python 3.11 Harbor 容器准备 MiniCoder 依赖 wheelhouse。"""
 
 from __future__ import annotations
 
@@ -45,12 +45,12 @@ def build_download_command(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="下载 Harbor Linux 容器可复用的 FirstCoder wheels")
+    parser = argparse.ArgumentParser(description="下载 Harbor Linux 容器可复用的 MiniCoder wheels")
     parser.add_argument("--pyproject", type=Path, default=Path("pyproject.toml"))
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path.home() / ".cache" / "firstcoder-harbor" / "wheelhouse",
+        default=Path.home() / ".cache" / "minicoder-harbor" / "wheelhouse",
     )
     parser.add_argument("--platform", default="manylinux2014_x86_64")
     parser.add_argument("--python-version", default="311")

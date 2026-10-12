@@ -8,11 +8,11 @@ from threading import Barrier, BrokenBarrierError
 
 import pytest
 
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.context.writer import SessionEventWriter
-from firstcoder.planning.reducer import TaskPlanCommandError, TaskPlanRevisionConflict
-from firstcoder.planning.service import TaskPlanMutation, TaskPlanService
-import firstcoder.planning.service as service_module
+from minicoder.context.store import JsonlSessionStore
+from minicoder.context.writer import SessionEventWriter
+from minicoder.planning.reducer import TaskPlanCommandError, TaskPlanRevisionConflict
+from minicoder.planning.service import TaskPlanMutation, TaskPlanService
+import minicoder.planning.service as service_module
 
 
 def test_planning_service_uses_cross_platform_file_lock() -> None:
@@ -198,7 +198,7 @@ def test_concurrent_services_atomically_compare_revision_and_append(
     service_a = TaskPlanService(store=store, writer=writer_a)
     service_b = TaskPlanService(store=store, writer=writer_b)
 
-    import firstcoder.planning.service as service_module
+    import minicoder.planning.service as service_module
 
     original_create_tasks = service_module.create_tasks
     rendezvous = Barrier(2)

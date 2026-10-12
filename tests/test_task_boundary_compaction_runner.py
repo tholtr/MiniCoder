@@ -26,11 +26,11 @@ from benchmark.task_boundary_compaction.runner import (
     _write_sanitized_events,
     run_aider_chain_case,
 )
-from firstcoder.context.events import SessionEvent
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.providers.base import ChatProvider
-from firstcoder.providers.types import ChatRequest, ChatResponse, TokenUsage
-from firstcoder.providers.types import MainRequestOptions
+from minicoder.context.events import SessionEvent
+from minicoder.context.store import JsonlSessionStore
+from minicoder.providers.base import ChatProvider
+from minicoder.providers.types import ChatRequest, ChatResponse, TokenUsage
+from minicoder.providers.types import MainRequestOptions
 
 
 BASE_COMMIT = "a" * 40
@@ -121,10 +121,10 @@ def test_aider_docker_command_mounts_disposable_project_and_readonly_original_te
         task=task,
         project_root=project,
         verifier_log_dir=verifier_logs,
-        image_tag="firstcoder-tbc-a1b2",
+        image_tag="minicoder-tbc-a1b2",
     )
 
-    assert build == ["docker", "build", "--tag", "firstcoder-tbc-a1b2", str(task_root / "environment")]
+    assert build == ["docker", "build", "--tag", "minicoder-tbc-a1b2", str(task_root / "environment")]
     assert run[:4] == ["docker", "run", "--rm", "--mount"]
     assert any(f"source={project.resolve()},target=/app" in argument for argument in run)
     assert any(f"source={tests.resolve()},target=/tests,readonly" in argument for argument in run)

@@ -2,14 +2,14 @@ from pathlib import Path
 
 import pytest
 
-from firstcoder.context.events import SessionEvent
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.context.writer import SessionEventWriter
-from firstcoder.providers.types import ChatResponse, ToolCall
-from firstcoder.session.models import ShareOptions
-from firstcoder.session.errors import SessionCorruptError
-from firstcoder.session.share import SessionShareService
-from firstcoder.tools.types import ToolResult
+from minicoder.context.events import SessionEvent
+from minicoder.context.store import JsonlSessionStore
+from minicoder.context.writer import SessionEventWriter
+from minicoder.providers.types import ChatResponse, ToolCall
+from minicoder.session.models import ShareOptions
+from minicoder.session.errors import SessionCorruptError
+from minicoder.session.share import SessionShareService
+from minicoder.tools.types import ToolResult
 
 
 def test_share_service_exports_markdown_to_default_path(tmp_path: Path) -> None:

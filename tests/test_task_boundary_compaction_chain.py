@@ -3,11 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from benchmark.task_boundary_compaction.chain import clone_recorded_session
-from firstcoder.agent.session import AgentSession
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.context.task_boundary import TaskBoundaryService
-from firstcoder.providers.types import ChatResponse, ToolCall
-from firstcoder.tools.types import make_text_result
+from minicoder.agent.session import AgentSession
+from minicoder.context.store import JsonlSessionStore
+from minicoder.context.task_boundary import TaskBoundaryService
+from minicoder.providers.types import ChatResponse, ToolCall
+from minicoder.tools.types import make_text_result
 
 
 def test_clone_recorded_session_preserves_a_context_but_not_a_project_files(tmp_path: Path) -> None:

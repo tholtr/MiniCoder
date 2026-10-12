@@ -1,11 +1,11 @@
 import pytest
 
-from firstcoder.context.checkpoint import Checkpoint
-from firstcoder.context.context_builder import ContextBuilder
-from firstcoder.context.models import AgentMessage, MessagePart, SessionView
-from firstcoder.context.tool_sequence import InvalidToolCallSequenceError, validate_tool_call_sequence
-from firstcoder.context.system_prompt import SystemPromptBuilder, SystemPromptInputs
-from firstcoder.providers.types import ChatMessage
+from minicoder.context.checkpoint import Checkpoint
+from minicoder.context.context_builder import ContextBuilder
+from minicoder.context.models import AgentMessage, MessagePart, SessionView
+from minicoder.context.tool_sequence import InvalidToolCallSequenceError, validate_tool_call_sequence
+from minicoder.context.system_prompt import SystemPromptBuilder, SystemPromptInputs
+from minicoder.providers.types import ChatMessage
 
 
 def _tool_transaction(suffix: str) -> tuple[AgentMessage, AgentMessage]:
@@ -98,7 +98,7 @@ def test_context_builder_projects_internal_messages_to_provider_messages() -> No
 
     messages = ContextBuilder().build_provider_messages(
         view,
-        system_prefix=[ChatMessage(role="system", content="你是 FirstCoder。")],
+        system_prefix=[ChatMessage(role="system", content="你是 MiniCoder。")],
     )
 
     assert [message.role for message in messages] == [
@@ -184,8 +184,8 @@ def test_context_builder_projects_tool_archive_placeholder_as_tool_message() -> 
 def test_context_builder_accepts_stable_system_prefix_from_builder() -> None:
     prefix = SystemPromptBuilder().build(
         SystemPromptInputs(
-            base_rules="你是 FirstCoder。",
-            agents_md="上下文管理放在 firstcoder/context。",
+            base_rules="你是 MiniCoder。",
+            agents_md="上下文管理放在 minicoder/context。",
             provider_name="test-provider",
             provider_capabilities={"tool_calling": True},
             permission_policy={"read": "allow"},
@@ -213,7 +213,7 @@ def test_context_builder_accepts_stable_system_prefix_from_builder() -> None:
     messages = ContextBuilder().build_provider_messages(view, system_prefix=prefix.messages)
 
     assert [message.role for message in messages] == ["system", "user"]
-    assert "你是 FirstCoder。" in messages[0].content
+    assert "你是 MiniCoder。" in messages[0].content
     assert "basis_message_id=msg_user" in messages[1].content
     assert "继续实现上下文。" in messages[1].content
 

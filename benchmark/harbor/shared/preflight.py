@@ -15,11 +15,11 @@ from typing import Callable, Iterable
 
 
 REQUIRED_PROVIDER_VARIABLES = (
-    "FIRSTCODER_PROVIDER",
-    "FIRSTCODER_PROVIDER_NAME",
-    "FIRSTCODER_MODEL",
-    "FIRSTCODER_BASE_URL",
-    "FIRSTCODER_API_KEY",
+    "MINICODER_PROVIDER",
+    "MINICODER_PROVIDER_NAME",
+    "MINICODER_MODEL",
+    "MINICODER_BASE_URL",
+    "MINICODER_API_KEY",
 )
 PLACEHOLDER_MARKERS = ("replace-with", "your-provider", "your-model", "provider.example")
 
@@ -74,7 +74,7 @@ def build_mounts(
         {
             "type": "bind",
             "source": str(Path(cache_dir).expanduser().resolve()),
-            "target": "/opt/firstcoder-cache",
+            "target": "/opt/minicoder-cache",
         }
     ]
     if wheelhouse_dir is not None:
@@ -82,7 +82,7 @@ def build_mounts(
             {
                 "type": "bind",
                 "source": str(Path(wheelhouse_dir).expanduser().resolve()),
-                "target": "/opt/firstcoder-wheelhouse",
+                "target": "/opt/minicoder-wheelhouse",
                 "read_only": True,
             }
         )
@@ -140,14 +140,14 @@ def run_preflight(
     checks.append(PreflightCheck("wheelhouse", wheelhouse_status, wheelhouse_message))
 
     if probe_network:
-        base_url = values.get("FIRSTCODER_BASE_URL")
+        base_url = values.get("MINICODER_BASE_URL")
         if _configured_value(base_url):
             status, message = _probe_provider_endpoint(str(base_url), timeout_seconds, url_opener)
         else:
             status, message = "fail", "无法探测 provider：基础地址未配置。"
         checks.append(PreflightCheck("provider_network", status, message))
-        api_key = values.get("FIRSTCODER_API_KEY")
-        model = model_override or values.get("FIRSTCODER_MODEL")
+        api_key = values.get("MINICODER_API_KEY")
+        model = model_override or values.get("MINICODER_MODEL")
         if _configured_value(base_url) and _configured_value(api_key) and _configured_value(model):
             status, message = _probe_provider_model(
                 str(base_url),
@@ -211,7 +211,7 @@ def _writable_directory(path: Path) -> tuple[bool, str]:
     try:
         path = path.expanduser().resolve()
         path.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(prefix="firstcoder-preflight-", dir=path, delete=True):
+        with tempfile.NamedTemporaryFile(prefix="minicoder-preflight-", dir=path, delete=True):
             pass
     except OSError as exc:
         return False, f"cache 目录不可写：{type(exc).__name__}。"
@@ -340,9 +340,9 @@ def _configured_value(value: str | None) -> bool:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="FirstCoder Harbor 运行预检")
+    parser = argparse.ArgumentParser(description="MiniCoder Harbor 运行预检")
     parser.add_argument("--env-file", type=Path, default=Path(".env.harbor"))
-    parser.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "firstcoder-harbor")
+    parser.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "minicoder-harbor")
     parser.add_argument("--model")
     parser.add_argument("--wheelhouse", type=Path)
     parser.add_argument("--wheelhouse-only", action="store_true")

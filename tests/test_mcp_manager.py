@@ -7,9 +7,9 @@ import threading
 import time
 from dataclasses import dataclass, field
 
-from firstcoder.mcp.manager import McpManager
-from firstcoder.mcp.models import McpLocalServerConfig, McpToolDescription
-from firstcoder.mcp.transport import _stdio_environment
+from minicoder.mcp.manager import McpManager
+from minicoder.mcp.models import McpLocalServerConfig, McpToolDescription
+from minicoder.mcp.transport import _stdio_environment
 
 
 @dataclass

@@ -9,40 +9,40 @@ from textual import events
 from textual.widgets import Markdown
 from textual.widgets import TextArea
 
-from firstcoder.agent.loop import ToolExecutionEvent
-from firstcoder.app.commands import CommandResult
-from firstcoder.app.commands import ContextCommandHandler
-from firstcoder.runtime.user_input import UserInputOption, UserInputRequest
-from firstcoder.app.router import CompositeCommandHandler
-from firstcoder.app.runtime import CurrentSessionState
-from firstcoder.app.session_commands import SessionCommandHandler
-from firstcoder.app.tui import ComposerTextArea, FirstCoderApp, FirstCoderScreen, FirstCoderTuiConfig
-from firstcoder.app.tui import FirstCoderMarkdown
-from firstcoder.app.tui import _entry_renderable
-from firstcoder.app.tui import _provider_name_markup
-from firstcoder.app.tui import _provider_model_markup
-from firstcoder.app.tui import _plain_static
-from firstcoder.app.tui import _observe_markdown_update
-from firstcoder.app.picker import TuiPickerItem, TuiPickerState, render_picker
-from firstcoder.app.picker_adapters import render_picker_item
-from firstcoder.app.activity_view import task_plan_panel_text, tool_event_label, tool_event_status, turn_metrics_text
-from firstcoder.app.welcome import welcome_renderable
-from firstcoder.app.transcript_view import entry_classes, tool_event_entry_kind
-from firstcoder.app.tui_state import TuiEntryKind, TuiTaskPlanPanelState, TuiTranscript
-from firstcoder.app.tui_state import TuiTranscriptEntry
-from firstcoder.context.models import SessionView
-from firstcoder.context.runtime_state import SessionRuntimeState
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.context.token_budget import build_context_budget
-from firstcoder.context.writer import SessionEventWriter
-from firstcoder.agent.session import AgentSession
-from firstcoder.input.attachments import UserAttachment
-from firstcoder.session.catalog import SessionCatalog
-from firstcoder.session.new import NewSessionService
-from firstcoder.session.resume import ResumeService
-from firstcoder.providers.types import ChatResponse, ChatStreamEvent, TokenUsage, ToolCall
-from firstcoder.tools.types import ToolResult
-from firstcoder.planning.models import Task, TaskPlan
+from minicoder.agent.loop import ToolExecutionEvent
+from minicoder.app.commands import CommandResult
+from minicoder.app.commands import ContextCommandHandler
+from minicoder.runtime.user_input import UserInputOption, UserInputRequest
+from minicoder.app.router import CompositeCommandHandler
+from minicoder.app.runtime import CurrentSessionState
+from minicoder.app.session_commands import SessionCommandHandler
+from minicoder.app.tui import ComposerTextArea, MiniCoderApp, MiniCoderScreen, MiniCoderTuiConfig
+from minicoder.app.tui import MiniCoderMarkdown
+from minicoder.app.tui import _entry_renderable
+from minicoder.app.tui import _provider_name_markup
+from minicoder.app.tui import _provider_model_markup
+from minicoder.app.tui import _plain_static
+from minicoder.app.tui import _observe_markdown_update
+from minicoder.app.picker import TuiPickerItem, TuiPickerState, render_picker
+from minicoder.app.picker_adapters import render_picker_item
+from minicoder.app.activity_view import task_plan_panel_text, tool_event_label, tool_event_status, turn_metrics_text
+from minicoder.app.welcome import welcome_renderable
+from minicoder.app.transcript_view import entry_classes, tool_event_entry_kind
+from minicoder.app.tui_state import TuiEntryKind, TuiTaskPlanPanelState, TuiTranscript
+from minicoder.app.tui_state import TuiTranscriptEntry
+from minicoder.context.models import SessionView
+from minicoder.context.runtime_state import SessionRuntimeState
+from minicoder.context.store import JsonlSessionStore
+from minicoder.context.token_budget import build_context_budget
+from minicoder.context.writer import SessionEventWriter
+from minicoder.agent.session import AgentSession
+from minicoder.input.attachments import UserAttachment
+from minicoder.session.catalog import SessionCatalog
+from minicoder.session.new import NewSessionService
+from minicoder.session.resume import ResumeService
+from minicoder.providers.types import ChatResponse, ChatStreamEvent, TokenUsage, ToolCall
+from minicoder.tools.types import ToolResult
+from minicoder.planning.models import Task, TaskPlan
 
 
 class FakeOutput:
@@ -79,9 +79,9 @@ class FakeOutput:
         return None
 
 
-def _static_output_text(app: FirstCoderApp) -> str:
+def _static_output_text(app: MiniCoderApp) -> str:
     static_text = "\n".join(str(getattr(widget, "content", getattr(widget, "renderable", ""))) for widget in app.query_one("#output").query("Static"))
-    markdown_text = "\n".join(str(getattr(widget, "source", "") or "\n".join(getattr(widget, "updates", []) or [])) for widget in app.query_one("#output").query("FirstCoderMarkdown"))
+    markdown_text = "\n".join(str(getattr(widget, "source", "") or "\n".join(getattr(widget, "updates", []) or [])) for widget in app.query_one("#output").query("MiniCoderMarkdown"))
     return "\n".join(part for part in [static_text, markdown_text] if part)
 
 
@@ -143,9 +143,9 @@ def test_stage_paste_attachments_adds_clipboard_attachment(monkeypatch, tmp_path
         size_bytes=image.stat().st_size,
         source="clipboard",
     )
-    app = FirstCoderApp()
+    app = MiniCoderApp()
     messages: list[str] = []
-    monkeypatch.setattr("firstcoder.app.tui.resolve_paste_attachments", lambda text: [attachment])
+    monkeypatch.setattr("minicoder.app.tui.resolve_paste_attachments", lambda text: [attachment])
     monkeypatch.setattr(app, "_write_line", lambda text, **kwargs: messages.append(text))
 
     assert app._stage_paste_attachments(None) is True
@@ -157,19 +157,19 @@ def test_stage_paste_attachments_does_not_add_duplicates(monkeypatch, tmp_path) 
     image = tmp_path / "clipboard.png"
     image.write_bytes(b"image")
     attachment = UserAttachment("image", image, "clipboard.png", "image/png", 5, "clipboard")
-    app = FirstCoderApp()
+    app = MiniCoderApp()
     app._staged_attachments.append(attachment)
-    monkeypatch.setattr("firstcoder.app.tui.resolve_paste_attachments", lambda text: [attachment])
+    monkeypatch.setattr("minicoder.app.tui.resolve_paste_attachments", lambda text: [attachment])
 
     assert app._stage_paste_attachments(None) is True
     assert app._staged_attachments == [attachment]
 
 
 def test_stage_paste_attachments_reports_attachment_errors(monkeypatch) -> None:
-    app = FirstCoderApp()
+    app = MiniCoderApp()
     messages: list[tuple[str, TuiEntryKind]] = []
     monkeypatch.setattr(
-        "firstcoder.app.tui.resolve_paste_attachments",
+        "minicoder.app.tui.resolve_paste_attachments",
         lambda text: (_ for _ in ()).throw(ValueError("Image exceeds 20MB limit: clipboard.png")),
     )
     monkeypatch.setattr(
@@ -254,7 +254,7 @@ def test_picker_rerender_updates_existing_command_widget_without_full_rerender(m
         def update(self, renderable) -> None:
             self.updates.append(renderable)
 
-    app = FirstCoderApp()
+    app = MiniCoderApp()
     widget = FakeWidget()
     entry = app.transcript.add(TuiEntryKind.COMMAND, "Select:\n> 1. first\n  2. second")
     entry.widget = widget
@@ -388,20 +388,20 @@ def _context_budget(view):
     )
 
 
-def test_firstcoder_app_can_be_created_with_command_handler() -> None:
+def test_minicoder_app_can_be_created_with_command_handler() -> None:
     handler = ContextCommandHandler(session=FakeSession(), budget_provider=_context_budget)
 
-    app = FirstCoderApp(command_handler=handler, config=FirstCoderTuiConfig(title="TestCoder"))
+    app = MiniCoderApp(command_handler=handler, config=MiniCoderTuiConfig(title="TestCoder"))
 
     assert app.command_handler is handler
     assert app.config.title == "TestCoder"
 
 
-def test_firstcoder_app_copies_to_macos_clipboard(monkeypatch) -> None:
-    app = FirstCoderApp()
+def test_minicoder_app_copies_to_macos_clipboard(monkeypatch) -> None:
+    app = MiniCoderApp()
     pbcopy = Mock()
-    monkeypatch.setattr("firstcoder.app.tui.platform.system", lambda: "Darwin")
-    monkeypatch.setattr("firstcoder.app.tui.subprocess.run", pbcopy)
+    monkeypatch.setattr("minicoder.app.tui.platform.system", lambda: "Darwin")
+    monkeypatch.setattr("minicoder.app.tui.subprocess.run", pbcopy)
 
     app.copy_to_clipboard("copied text")
 
@@ -410,9 +410,9 @@ def test_firstcoder_app_copies_to_macos_clipboard(monkeypatch) -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_runs_manual_compact_command_without_blocking_ui() -> None:
+async def test_minicoder_app_runs_manual_compact_command_without_blocking_ui() -> None:
     handler = BlockingCompactCommandHandler()
-    app = FirstCoderApp(command_handler=handler)
+    app = MiniCoderApp(command_handler=handler)
 
     ui_thread_id = threading.get_ident()
     async with app.run_test() as pilot:
@@ -429,8 +429,8 @@ async def test_firstcoder_app_runs_manual_compact_command_without_blocking_ui() 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_uses_custom_chrome_instead_of_textual_header_footer() -> None:
-    app = FirstCoderApp(current_session=FakeSession())
+async def test_minicoder_app_uses_custom_chrome_instead_of_textual_header_footer() -> None:
+    app = MiniCoderApp(current_session=FakeSession())
 
     async with app.run_test():
         widget_types = [type(widget).__name__ for widget in app.query("*")]
@@ -450,31 +450,31 @@ async def test_firstcoder_app_uses_custom_chrome_instead_of_textual_header_foote
         ("bypass", "#ff6b5f"),
     ],
 )
-def test_firstcoder_app_topbar_colors_each_permission_mode(mode, color) -> None:
+def test_minicoder_app_topbar_colors_each_permission_mode(mode, color) -> None:
     class ModeSession(FakeSession):
         pass
 
     session = ModeSession()
     session.mode = mode
-    app = FirstCoderApp(current_session=session)
+    app = MiniCoderApp(current_session=session)
 
-    assert app._topbar_text() == ("[#7bba55]FirstCoder[/]   [#303238]·[/]   [#7bba55]idle · ready[/]   " f"[#303238]·[/]   [{color}]{mode}[/]")
+    assert app._topbar_text() == ("[#7bba55]MiniCoder[/]   [#303238]·[/]   [#7bba55]idle · ready[/]   " f"[#303238]·[/]   [{color}]{mode}[/]")
     assert "sess_test" not in app._topbar_text()
 
 
-def test_firstcoder_app_topbar_shows_yurenapi_glow_and_hides_session_id() -> None:
-    app = FirstCoderApp(
+def test_minicoder_app_topbar_shows_yurenapi_glow_and_hides_session_id() -> None:
+    app = MiniCoderApp(
         current_session=FakeSession(),
-        config=FirstCoderTuiConfig(
+        config=MiniCoderTuiConfig(
             provider_name="yurenapi",
             provider_model="gpt-5.5",
-            project_name="FirstCoder",
+            project_name="MiniCoder",
         ),
     )
 
     text = app._topbar_text()
 
-    assert Text.from_markup(text).plain == "FirstCoder   ·   idle · ready   ·   yurenapi/gpt-5.5   ·   standard   ·   cwd FirstCoder"
+    assert Text.from_markup(text).plain == "MiniCoder   ·   idle · ready   ·   yurenapi/gpt-5.5   ·   standard   ·   cwd MiniCoder"
     assert "[#7eb6ff]r[/]" in text
     assert "sess_test" not in text
 
@@ -518,7 +518,7 @@ def test_other_provider_names_keep_the_standard_green() -> None:
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_yuren_provider_glow_animates_and_stops_when_the_app_unmounts() -> None:
-    app = FirstCoderApp(config=FirstCoderTuiConfig(provider_name="Yuren", provider_model="gpt-5.6-terra"))
+    app = MiniCoderApp(config=MiniCoderTuiConfig(provider_name="Yuren", provider_model="gpt-5.6-terra"))
 
     async with app.run_test():
         timer = app._provider_glow_timer
@@ -535,7 +535,7 @@ async def test_yuren_provider_glow_animates_and_stops_when_the_app_unmounts() ->
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_unsupported_yuren_model_does_not_start_provider_glow() -> None:
-    app = FirstCoderApp(config=FirstCoderTuiConfig(provider_name="Yuren", provider_model="other-model"))
+    app = MiniCoderApp(config=MiniCoderTuiConfig(provider_name="Yuren", provider_model="other-model"))
 
     async with app.run_test():
         assert app._provider_glow_timer is None
@@ -558,18 +558,18 @@ def test_observe_markdown_update_does_not_consume_unexpected_update_errors() -> 
         result.finish()
 
 
-def test_stable_firstcoder_markdown_and_blocks_allow_selection() -> None:
-    markdown = FirstCoderMarkdown()
+def test_stable_minicoder_markdown_and_blocks_allow_selection() -> None:
+    markdown = MiniCoderMarkdown()
 
     assert markdown.allow_select is True
-    assert FirstCoderMarkdown.BLOCKS
-    assert all(block.ALLOW_SELECT is True for block in FirstCoderMarkdown.BLOCKS.values())
+    assert MiniCoderMarkdown.BLOCKS
+    assert all(block.ALLOW_SELECT is True for block in MiniCoderMarkdown.BLOCKS.values())
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_static_and_completed_markdown_output_allow_selection() -> None:
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     async with app.run_test() as pilot:
         app._write_line("plain output", kind=TuiEntryKind.SYSTEM)
@@ -578,7 +578,7 @@ async def test_static_and_completed_markdown_output_allow_selection() -> None:
 
         assert app.ALLOW_SELECT is True
         assert all(widget.allow_select for widget in app.query("#output Static"))
-        markdown = app.query_one("FirstCoderMarkdown", FirstCoderMarkdown)
+        markdown = app.query_one("MiniCoderMarkdown", MiniCoderMarkdown)
         assert markdown.allow_select is True
         assert all(block.allow_select for block in markdown.query("*"))
 
@@ -586,7 +586,7 @@ async def test_static_and_completed_markdown_output_allow_selection() -> None:
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_ctrl_c_copies_when_screen_has_selected_output(monkeypatch) -> None:
-    app = FirstCoderApp()
+    app = MiniCoderApp()
     copied: list[str] = []
     quit_calls: list[bool] = []
 
@@ -603,7 +603,7 @@ async def test_ctrl_c_copies_when_screen_has_selected_output(monkeypatch) -> Non
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_ctrl_c_quits_when_screen_has_no_selected_output(monkeypatch) -> None:
-    app = FirstCoderApp()
+    app = MiniCoderApp()
     quit_calls: list[bool] = []
 
     async with app.run_test():
@@ -618,7 +618,7 @@ async def test_ctrl_c_quits_when_screen_has_no_selected_output(monkeypatch) -> N
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 @pytest.mark.parametrize("copy_key", ["ctrl+c", "super+c"])
 async def test_composer_selection_copy_does_not_quit(copy_key) -> None:
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     async with app.run_test() as pilot:
         composer = app.query_one("#input", ComposerTextArea)
@@ -639,7 +639,7 @@ def test_welcome_renderable_uses_colored_full_block_pixels() -> None:
     assert renderable.align == "center"
     assert "██" in text.plain
     assert "▀" not in text.plain
-    assert "FirstCoder" not in text.plain
+    assert "MiniCoder" not in text.plain
     assert "Commands:" not in text.plain
     assert any(span.style == "#81e8bb" for span in text.spans)
     assert any(span.style == "#18cfcb" for span in text.spans)
@@ -650,9 +650,9 @@ def test_welcome_renderable_uses_colored_full_block_pixels() -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_shows_welcome_until_first_input() -> None:
+async def test_minicoder_app_shows_welcome_until_first_input() -> None:
     runner = FakeAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test(size=(120, 40)) as pilot:
         welcome = app.query_one("#welcome")
@@ -674,8 +674,8 @@ async def test_firstcoder_app_shows_welcome_until_first_input() -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_welcome_particles_animate_between_frames() -> None:
-    app = FirstCoderApp()
+async def test_minicoder_app_welcome_particles_animate_between_frames() -> None:
+    app = MiniCoderApp()
 
     async with app.run_test(size=(120, 40)):
         welcome = app.query_one("#welcome")
@@ -688,14 +688,14 @@ async def test_firstcoder_app_welcome_particles_animate_between_frames() -> None
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_uses_compact_welcome_in_an_80_by_24_terminal() -> None:
-    app = FirstCoderApp()
+async def test_minicoder_app_uses_compact_welcome_in_an_80_by_24_terminal() -> None:
+    app = MiniCoderApp()
 
     async with app.run_test(size=(80, 24)) as pilot:
         welcome = app.query_one("#welcome")
         plain = getattr(getattr(welcome.content, "renderable", welcome.content), "plain", str(welcome.content))
 
-        assert "firstcoder" in plain
+        assert "minicoder" in plain
         assert "██" not in plain
         assert app._welcome_particle_timer is None
         assert app.query_one("#input").display is True
@@ -709,52 +709,52 @@ async def test_firstcoder_app_uses_compact_welcome_in_an_80_by_24_terminal() -> 
         assert app._welcome_particle_timer is not None
 
 
-def test_firstcoder_app_topbar_uses_spacious_two_sided_layout_when_width_is_known() -> None:
-    app = FirstCoderApp(
+def test_minicoder_app_topbar_uses_spacious_two_sided_layout_when_width_is_known() -> None:
+    app = MiniCoderApp(
         current_session=FakeSession(),
-        config=FirstCoderTuiConfig(
+        config=MiniCoderTuiConfig(
             provider_name="yurenapi",
             provider_model="gpt-5.5",
-            project_name="FirstCoder",
+            project_name="MiniCoder",
         ),
     )
 
     text = app._topbar_text(width=120)
 
-    assert text.startswith("[#7bba55]FirstCoder[/]")
+    assert text.startswith("[#7bba55]MiniCoder[/]")
     assert "[#7bba55]idle · ready[/]" in text
     assert "sess_test" not in text
     assert "yurenapi/gpt-5.5" in Text.from_markup(text).plain
     assert "[#7eb6ff]r[/]" in text
-    assert "[#6e6d72]cwd FirstCoder[/]" in text
+    assert "[#6e6d72]cwd MiniCoder[/]" in text
     assert " " * 20 in text
 
 
-def test_firstcoder_app_topbar_highlights_bypass_mode_and_truncates_long_session() -> None:
+def test_minicoder_app_topbar_highlights_bypass_mode_and_truncates_long_session() -> None:
     class BypassSession(FakeSession):
         session_id = "sess_c8d401e2124f"
         mode = "bypass"
 
-    app = FirstCoderApp(current_session=BypassSession())
+    app = MiniCoderApp(current_session=BypassSession())
 
-    assert app._topbar_text() == ("[#7bba55]FirstCoder[/]   [#303238]·[/]   [#7bba55]idle · ready[/]   " "[#303238]·[/]   [#ff6b5f]bypass[/]")
+    assert app._topbar_text() == ("[#7bba55]MiniCoder[/]   [#303238]·[/]   [#7bba55]idle · ready[/]   " "[#303238]·[/]   [#ff6b5f]bypass[/]")
 
 
-def test_firstcoder_app_topbar_includes_live_activity_status() -> None:
-    app = FirstCoderApp(current_session=FakeSession())
+def test_minicoder_app_topbar_includes_live_activity_status() -> None:
+    app = MiniCoderApp(current_session=FakeSession())
 
     app._activity_text = "thinking [.. ] planning next step..."
 
     assert "[#7bba55]thinking [.. ] planning next step...[/]" in app._topbar_text(width=120)
 
 
-def test_firstcoder_app_topbar_truncates_long_activity_before_metadata() -> None:
-    app = FirstCoderApp(
+def test_minicoder_app_topbar_truncates_long_activity_before_metadata() -> None:
+    app = MiniCoderApp(
         current_session=FakeSession(),
-        config=FirstCoderTuiConfig(
+        config=MiniCoderTuiConfig(
             provider_name="yurenapi",
             provider_model="very-long-model-name",
-            project_name="FirstCoder",
+            project_name="MiniCoder",
         ),
     )
     app._activity_text = "thinking [...] " + "reading think tool result " * 8
@@ -762,18 +762,18 @@ def test_firstcoder_app_topbar_truncates_long_activity_before_metadata() -> None
     text = app._topbar_text(width=150)
 
     assert "[#7bba55]yurenapi[/][#6e6d72]/very-long-model-name[/]" in text
-    assert "[#6e6d72]cwd FirstCoder[/]" in text
+    assert "[#6e6d72]cwd MiniCoder[/]" in text
     assert "reading think tool result reading think tool result" not in text
     assert "thinking" in Text.from_markup(text).plain
 
 
-def test_firstcoder_app_topbar_fits_narrow_width_with_long_activity_and_metadata() -> None:
-    app = FirstCoderApp(
+def test_minicoder_app_topbar_fits_narrow_width_with_long_activity_and_metadata() -> None:
+    app = MiniCoderApp(
         current_session=FakeSession(),
-        config=FirstCoderTuiConfig(
+        config=MiniCoderTuiConfig(
             provider_name="yurenapi",
             provider_model="very-long-model-name",
-            project_name="FirstCoder",
+            project_name="MiniCoder",
         ),
     )
     app._activity_text = "thinking [...] " + "reading think tool result " * 8
@@ -784,23 +784,23 @@ def test_firstcoder_app_topbar_fits_narrow_width_with_long_activity_and_metadata
     assert "\n" not in plain
     assert len(plain) <= 80
     assert "sess_test" not in plain
-    assert plain.startswith("FirstCoder")
+    assert plain.startswith("MiniCoder")
 
     narrow_plain = Text.from_markup(app._topbar_text(width=60)).plain
 
     assert "\n" not in narrow_plain
     assert len(narrow_plain) <= 60
     assert "sess_test" not in narrow_plain
-    assert narrow_plain.startswith("FirstCoder")
+    assert narrow_plain.startswith("MiniCoder")
 
 
-def test_firstcoder_app_topbar_truncates_narrow_metadata_to_one_row() -> None:
-    app = FirstCoderApp(
+def test_minicoder_app_topbar_truncates_narrow_metadata_to_one_row() -> None:
+    app = MiniCoderApp(
         current_session=FakeSession(),
-        config=FirstCoderTuiConfig(
+        config=MiniCoderTuiConfig(
             provider_name="yurenapi",
             provider_model="very-long-model-name",
-            project_name="FirstCoder",
+            project_name="MiniCoder",
         ),
     )
 
@@ -808,7 +808,7 @@ def test_firstcoder_app_topbar_truncates_narrow_metadata_to_one_row() -> None:
 
     assert "\n" not in plain
     assert len(plain) <= 60
-    assert plain.startswith("FirstCoder")
+    assert plain.startswith("MiniCoder")
     assert "idle" in plain
     assert "sess_test" not in plain
 
@@ -820,25 +820,25 @@ def test_tui_transcript_records_structured_entries_with_stable_labels() -> None:
     assistant = transcript.add(TuiEntryKind.ASSISTANT, "hi")
     tool = transcript.add(
         TuiEntryKind.TOOL,
-        "rg -n Permission firstcoder",
+        "rg -n Permission minicoder",
         label="tool exec_command running",
         status="running",
     )
 
     assert [entry.id for entry in transcript.entries] == [user.id, assistant.id, tool.id]
-    assert [entry.label for entry in transcript.entries] == ["you", "FirstCoder", "tool exec_command running"]
+    assert [entry.label for entry in transcript.entries] == ["you", "MiniCoder", "tool exec_command running"]
     assert transcript.entries[-1].status == "running"
 
 
 def test_tui_transcript_tracks_active_tool_until_terminal_status() -> None:
     transcript = TuiTranscript()
 
-    transcript.record_tool_activity("exec_command", "running", "rg -n Permission firstcoder")
+    transcript.record_tool_activity("exec_command", "running", "rg -n Permission minicoder")
 
     assert transcript.active_tool is not None
     assert transcript.active_tool.name == "exec_command"
     assert transcript.active_tool.status == "running"
-    assert transcript.active_tool.summary == "rg -n Permission firstcoder"
+    assert transcript.active_tool.summary == "rg -n Permission minicoder"
 
     transcript.record_tool_activity("exec_command", "success", "12 matches")
 
@@ -926,9 +926,9 @@ def test_task_plan_panel_text_renders_dag_levels_dependencies_and_derived_status
     ) == ("Task Plan · dag\n" "Level 0 · parallel\n" "  [→] 调研 A (research_a)\n" "  [~] 调研 B (research_b)\n" "Level 1\n" "  [!] 汇总 (summary) · depends on: research_a, research_b")
 
 
-def test_firstcoder_app_records_rendered_messages_in_transcript(monkeypatch) -> None:
+def test_minicoder_app_records_rendered_messages_in_transcript(monkeypatch) -> None:
     output = FakeOutput()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
 
     app._write_line("> hello", kind=TuiEntryKind.USER)
@@ -936,7 +936,7 @@ def test_firstcoder_app_records_rendered_messages_in_transcript(monkeypatch) -> 
 
     assert [(entry.kind, entry.label, entry.body) for entry in app.transcript.entries] == [
         (TuiEntryKind.USER, "you", "> hello"),
-        (TuiEntryKind.ASSISTANT, "FirstCoder", "**hi**"),
+        (TuiEntryKind.ASSISTANT, "MiniCoder", "**hi**"),
     ]
 
 
@@ -1158,7 +1158,7 @@ class SubmitChatCommandHandler:
         )
 
 
-def test_firstcoder_app_can_be_created_with_composite_handler_and_chat_runner() -> None:
+def test_minicoder_app_can_be_created_with_composite_handler_and_chat_runner() -> None:
     context_handler = ContextCommandHandler(session=FakeSession(), budget_provider=_context_budget)
     composite = CompositeCommandHandler(
         [
@@ -1168,7 +1168,7 @@ def test_firstcoder_app_can_be_created_with_composite_handler_and_chat_runner() 
     )
     runner = FakeChatRunner()
 
-    app = FirstCoderApp(command_handler=composite, chat_runner=runner)
+    app = MiniCoderApp(command_handler=composite, chat_runner=runner)
 
     assert app.command_handler is composite
     assert app.chat_runner is runner
@@ -1176,9 +1176,9 @@ def test_firstcoder_app_can_be_created_with_composite_handler_and_chat_runner() 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_runs_plain_chat_when_only_chat_runner_is_configured() -> None:
+async def test_minicoder_app_runs_plain_chat_when_only_chat_runner_is_configured() -> None:
     runner = FakeChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1190,7 +1190,7 @@ async def test_firstcoder_app_runs_plain_chat_when_only_chat_runner_is_configure
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_sends_staged_paste_attachment_and_clears_it(tmp_path, monkeypatch) -> None:
+async def test_minicoder_app_sends_staged_paste_attachment_and_clears_it(tmp_path, monkeypatch) -> None:
     image = tmp_path / "image.png"
     image.write_bytes(b"image")
     attachment = UserAttachment(
@@ -1201,9 +1201,9 @@ async def test_firstcoder_app_sends_staged_paste_attachment_and_clears_it(tmp_pa
         size_bytes=image.stat().st_size,
         source="paste",
     )
-    monkeypatch.setattr("firstcoder.app.tui.resolve_paste_attachments", lambda text: [attachment])
+    monkeypatch.setattr("minicoder.app.tui.resolve_paste_attachments", lambda text: [attachment])
     runner = FakeChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1218,11 +1218,11 @@ async def test_firstcoder_app_sends_staged_paste_attachment_and_clears_it(tmp_pa
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_pasting_a_file_path_stages_attachment_without_inserting_path(tmp_path) -> None:
+async def test_minicoder_app_pasting_a_file_path_stages_attachment_without_inserting_path(tmp_path) -> None:
     video = tmp_path / "sample.mp4"
     video.write_bytes(b"video")
     runner = FakeChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         input_widget = app.query_one("#input", TextArea)
@@ -1240,9 +1240,9 @@ async def test_firstcoder_app_pasting_a_file_path_stages_attachment_without_inse
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_pasting_plain_text_keeps_text_in_composer(monkeypatch) -> None:
-    monkeypatch.setattr("firstcoder.app.tui.resolve_paste_attachments", lambda text: [])
-    app = FirstCoderApp()
+async def test_minicoder_app_pasting_plain_text_keeps_text_in_composer(monkeypatch) -> None:
+    monkeypatch.setattr("minicoder.app.tui.resolve_paste_attachments", lambda text: [])
+    app = MiniCoderApp()
 
     async with app.run_test():
         input_widget = app.query_one("#input", TextArea)
@@ -1255,7 +1255,7 @@ async def test_firstcoder_app_pasting_plain_text_keeps_text_in_composer(monkeypa
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_composer_advertises_ctrl_or_cmd_v_for_image_paste() -> None:
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     async with app.run_test():
         composer = app.query_one("#input", ComposerTextArea)
@@ -1266,8 +1266,8 @@ async def test_composer_advertises_ctrl_or_cmd_v_for_image_paste() -> None:
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 @pytest.mark.parametrize("paste_key", ["ctrl+v", "super+v"])
 async def test_composer_paste_shortcut_leaves_plain_text_for_terminal_paste_event(monkeypatch, paste_key) -> None:
-    monkeypatch.setattr("firstcoder.app.tui.resolve_paste_attachments", lambda text: [])
-    app = FirstCoderApp()
+    monkeypatch.setattr("minicoder.app.tui.resolve_paste_attachments", lambda text: [])
+    app = MiniCoderApp()
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1283,12 +1283,12 @@ async def test_composer_paste_shortcut_leaves_plain_text_for_terminal_paste_even
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 @pytest.mark.parametrize("paste_key", ["ctrl+v", "super+v", "f8"])
-async def test_firstcoder_app_paste_shortcut_stages_clipboard_image_while_composer_is_focused(tmp_path, monkeypatch, paste_key) -> None:
+async def test_minicoder_app_paste_shortcut_stages_clipboard_image_while_composer_is_focused(tmp_path, monkeypatch, paste_key) -> None:
     image = tmp_path / "clipboard.png"
     image.write_bytes(b"image")
     attachment = UserAttachment("image", image, "clipboard.png", "image/png", 5, "clipboard")
-    monkeypatch.setattr("firstcoder.app.tui.resolve_paste_attachments", lambda text: [attachment])
-    app = FirstCoderApp()
+    monkeypatch.setattr("minicoder.app.tui.resolve_paste_attachments", lambda text: [attachment])
+    app = MiniCoderApp()
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1303,8 +1303,8 @@ async def test_firstcoder_app_paste_shortcut_stages_clipboard_image_while_compos
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 @pytest.mark.parametrize("paste_key", ["ctrl+v", "super+v"])
 async def test_composer_paste_shortcut_does_not_report_missing_clipboard_image(monkeypatch, paste_key) -> None:
-    monkeypatch.setattr("firstcoder.app.tui.resolve_paste_attachments", lambda text: [])
-    app = FirstCoderApp()
+    monkeypatch.setattr("minicoder.app.tui.resolve_paste_attachments", lambda text: [])
+    app = MiniCoderApp()
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1317,8 +1317,8 @@ async def test_composer_paste_shortcut_does_not_report_missing_clipboard_image(m
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_composer_image_paste_shortcut_reports_missing_clipboard_image(monkeypatch) -> None:
-    monkeypatch.setattr("firstcoder.app.tui.resolve_paste_attachments", lambda text: [])
-    app = FirstCoderApp()
+    monkeypatch.setattr("minicoder.app.tui.resolve_paste_attachments", lambda text: [])
+    app = MiniCoderApp()
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1330,9 +1330,9 @@ async def test_composer_image_paste_shortcut_reports_missing_clipboard_image(mon
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_submits_multiline_composer_text() -> None:
+async def test_minicoder_app_submits_multiline_composer_text() -> None:
     runner = FakeChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         input_widget = app.query_one("#input", TextArea)
@@ -1345,9 +1345,9 @@ async def test_firstcoder_app_submits_multiline_composer_text() -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_shift_enter_inserts_newline_without_submitting() -> None:
+async def test_minicoder_app_shift_enter_inserts_newline_without_submitting() -> None:
     runner = FakeChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1362,9 +1362,9 @@ async def test_firstcoder_app_shift_enter_inserts_newline_without_submitting() -
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_does_not_send_unhandled_slash_command_to_chat_runner() -> None:
+async def test_minicoder_app_does_not_send_unhandled_slash_command_to_chat_runner() -> None:
     runner = FakeChatRunner()
-    app = FirstCoderApp(command_handler=UnhandledCommandHandler(), chat_runner=runner)
+    app = MiniCoderApp(command_handler=UnhandledCommandHandler(), chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1376,9 +1376,9 @@ async def test_firstcoder_app_does_not_send_unhandled_slash_command_to_chat_runn
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_submits_chat_from_command_action() -> None:
+async def test_minicoder_app_submits_chat_from_command_action() -> None:
     runner = FakeChatRunner()
-    app = FirstCoderApp(command_handler=SubmitChatCommandHandler(), chat_runner=runner)
+    app = MiniCoderApp(command_handler=SubmitChatCommandHandler(), chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1390,9 +1390,9 @@ async def test_firstcoder_app_submits_chat_from_command_action() -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_displays_session_id_and_runner_display_lines() -> None:
+async def test_minicoder_app_displays_session_id_and_runner_display_lines() -> None:
     runner = FakeDisplayChatRunner()
-    app = FirstCoderApp(chat_runner=runner, current_session=FakeSession())
+    app = MiniCoderApp(chat_runner=runner, current_session=FakeSession())
 
     async with app.run_test() as pilot:
         assert app.sub_title == "Session: sess_test"
@@ -1405,9 +1405,9 @@ async def test_firstcoder_app_displays_session_id_and_runner_display_lines() -> 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_awaits_async_chat_runner_when_available() -> None:
+async def test_minicoder_app_awaits_async_chat_runner_when_available() -> None:
     runner = FakeAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1420,9 +1420,9 @@ async def test_firstcoder_app_awaits_async_chat_runner_when_available() -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_queues_guidance_while_chat_is_running() -> None:
+async def test_minicoder_app_queues_guidance_while_chat_is_running() -> None:
     runner = BlockingGuidanceAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1440,7 +1440,7 @@ async def test_firstcoder_app_queues_guidance_while_chat_is_running() -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_resume_picker_replays_selected_session_history(tmp_path) -> None:
+async def test_minicoder_app_resume_picker_replays_selected_session_history(tmp_path) -> None:
     store = JsonlSessionStore(tmp_path)
     writer_one = SessionEventWriter(store=store, session_id="sess_one")
     writer_one.append_session_created(title="第一个")
@@ -1465,7 +1465,7 @@ async def test_firstcoder_app_resume_picker_replays_selected_session_history(tmp
         resume_service=ResumeService(store=store, project_root=tmp_path),
         on_resume=state.set_session,
     )
-    app = FirstCoderApp(command_handler=handler, current_session=state)
+    app = MiniCoderApp(command_handler=handler, current_session=state)
     markdown_rendered = False
 
     async with app.run_test() as pilot:
@@ -1480,7 +1480,7 @@ async def test_firstcoder_app_resume_picker_replays_selected_session_history(tmp
         await pilot.press("enter")
         await pilot.pause()
         output_text = _static_output_text(app)
-        markdown_rendered = bool(app.query_one("#output").query("FirstCoderMarkdown"))
+        markdown_rendered = bool(app.query_one("#output").query("MiniCoderMarkdown"))
 
     assert state.session.session_id == "sess_one"
     assert "旧问题" in output_text
@@ -1494,7 +1494,7 @@ async def test_firstcoder_app_resume_picker_replays_selected_session_history(tmp
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_resume_picker_renders_twenty_visible_rows_and_scrolls(tmp_path) -> None:
+async def test_minicoder_app_resume_picker_renders_twenty_visible_rows_and_scrolls(tmp_path) -> None:
     store = JsonlSessionStore(tmp_path)
     for index in range(25):
         writer = SessionEventWriter(store=store, session_id=f"sess_{index:02d}")
@@ -1508,7 +1508,7 @@ async def test_firstcoder_app_resume_picker_renders_twenty_visible_rows_and_scro
         resume_service=ResumeService(store=store, project_root=tmp_path),
         on_resume=state.set_session,
     )
-    app = FirstCoderApp(command_handler=handler, current_session=state)
+    app = MiniCoderApp(command_handler=handler, current_session=state)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1537,11 +1537,11 @@ async def test_firstcoder_app_resume_picker_renders_twenty_visible_rows_and_scro
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_model_picker_switches_selected_model() -> None:
+async def test_minicoder_app_model_picker_switches_selected_model() -> None:
     handler = RecordingCommandHandler()
-    app = FirstCoderApp(
+    app = MiniCoderApp(
         command_handler=handler,
-        config=FirstCoderTuiConfig(provider_name="fake", provider_model="old"),
+        config=MiniCoderTuiConfig(provider_name="fake", provider_model="old"),
     )
 
     async with app.run_test() as pilot:
@@ -1564,11 +1564,11 @@ async def test_firstcoder_app_model_picker_switches_selected_model() -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_models_alias_opens_model_picker() -> None:
+async def test_minicoder_app_models_alias_opens_model_picker() -> None:
     handler = RecordingCommandHandler()
-    app = FirstCoderApp(
+    app = MiniCoderApp(
         command_handler=handler,
-        config=FirstCoderTuiConfig(provider_name="fake", provider_model="old"),
+        config=MiniCoderTuiConfig(provider_name="fake", provider_model="old"),
     )
 
     async with app.run_test() as pilot:
@@ -1584,9 +1584,9 @@ async def test_firstcoder_app_models_alias_opens_model_picker() -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_skill_picker_references_selected_skill_in_input() -> None:
+async def test_minicoder_app_skill_picker_references_selected_skill_in_input() -> None:
     handler = RecordingCommandHandler()
-    app = FirstCoderApp(command_handler=handler)
+    app = MiniCoderApp(command_handler=handler)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1609,7 +1609,7 @@ async def test_firstcoder_app_skill_picker_references_selected_skill_in_input() 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_new_command_clears_previous_output(tmp_path) -> None:
+async def test_minicoder_app_new_command_clears_previous_output(tmp_path) -> None:
     store = JsonlSessionStore(tmp_path)
     writer = SessionEventWriter(store=store, session_id="sess_old")
     writer.append_session_created(title="旧会话")
@@ -1622,7 +1622,7 @@ async def test_firstcoder_app_new_command_clears_previous_output(tmp_path) -> No
         new_service=NewSessionService(store=store, project_root=tmp_path),
         on_resume=state.set_session,
     )
-    app = FirstCoderApp(command_handler=handler, current_session=state)
+    app = MiniCoderApp(command_handler=handler, current_session=state)
 
     async with app.run_test() as pilot:
         app._write_line("> 旧问题", kind=TuiEntryKind.USER)
@@ -1643,9 +1643,9 @@ async def test_firstcoder_app_new_command_clears_previous_output(tmp_path) -> No
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_double_escape_interrupts_running_chat() -> None:
+async def test_minicoder_app_double_escape_interrupts_running_chat() -> None:
     runner = BlockingAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1666,9 +1666,9 @@ async def test_firstcoder_app_double_escape_interrupts_running_chat() -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_streaming_tui_does_not_render_duplicate_final_markdown() -> None:
+async def test_minicoder_app_streaming_tui_does_not_render_duplicate_final_markdown() -> None:
     runner = FakeStreamingTextAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -1683,16 +1683,16 @@ async def test_firstcoder_app_streaming_tui_does_not_render_duplicate_final_mark
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_right_clicking_markdown_output_does_not_crash_selection_path() -> None:
+async def test_minicoder_app_right_clicking_markdown_output_does_not_crash_selection_path() -> None:
     runner = FakeChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
         await pilot.press(*"hello")
         await pilot.press("enter")
         await pilot.pause()
-        markdown = app.query_one("FirstCoderMarkdown")
+        markdown = app.query_one("MiniCoderMarkdown")
         assert app.ALLOW_SELECT is True
         assert markdown.allow_select is True
         assert all(block.allow_select for block in markdown.query("*"))
@@ -1704,13 +1704,13 @@ async def test_firstcoder_app_right_clicking_markdown_output_does_not_crash_sele
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_right_clicking_markdown_code_block_does_not_crash_selection_path() -> None:
-    app = FirstCoderApp()
+async def test_minicoder_app_right_clicking_markdown_code_block_does_not_crash_selection_path() -> None:
+    app = MiniCoderApp()
 
     async with app.run_test() as pilot:
         app._write_markdown_message("```text\nIt was the best of times\n```")
         await pilot.pause()
-        markdown = app.query_one("FirstCoderMarkdown", FirstCoderMarkdown)
+        markdown = app.query_one("MiniCoderMarkdown", MiniCoderMarkdown)
         assert app.ALLOW_SELECT is True
         assert markdown.allow_select is True
         assert all(block.allow_select for block in markdown.query("*"))
@@ -1721,11 +1721,11 @@ async def test_firstcoder_app_right_clicking_markdown_code_block_does_not_crash_
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_streaming_markdown_selection_state_applies_to_mounted_blocks() -> None:
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     async with app.run_test() as pilot:
         output = app.query_one("#output")
-        markdown = FirstCoderMarkdown(selectable=False)
+        markdown = MiniCoderMarkdown(selectable=False)
         await output.mount(markdown)
         await markdown.update(
             "paragraph\n\n- list\n\n| one | two |\n| --- | --- |\n| 1 | 2 |\n\n```python\nprint('ok')\n```"
@@ -1736,17 +1736,17 @@ async def test_streaming_markdown_selection_state_applies_to_mounted_blocks() ->
         selection_leaves = [
             widget
             for widget in markdown.query("*")
-            if type(widget).__name__.removeprefix("FirstCoder")
+            if type(widget).__name__.removeprefix("MiniCoder")
             in {"MarkdownBullet", "MarkdownTableCellContents"}
         ]
         assert blocks
-        assert {type(widget).__name__.removeprefix("FirstCoder") for widget in selection_leaves} == {
+        assert {type(widget).__name__.removeprefix("MiniCoder") for widget in selection_leaves} == {
             "MarkdownBullet",
             "MarkdownTableCellContents",
         }
         assert markdown.allow_select is False
         screen = app.screen
-        assert isinstance(screen, FirstCoderScreen)
+        assert isinstance(screen, MiniCoderScreen)
         assert all(screen._selection_is_blocked_by_streaming_markdown(block) for block in blocks)
         assert all(screen._selection_is_blocked_by_streaming_markdown(widget) for widget in selection_leaves)
 
@@ -1760,11 +1760,11 @@ async def test_streaming_markdown_selection_state_applies_to_mounted_blocks() ->
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_screen_rejects_all_leaves_inside_unstable_streaming_markdown() -> None:
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     async with app.run_test() as pilot:
         output = app.query_one("#output")
-        markdown = FirstCoderMarkdown(selectable=False)
+        markdown = MiniCoderMarkdown(selectable=False)
         await output.mount(markdown)
         await markdown.update("- list\n\n| one | two |\n| --- | --- |\n| 1 | 2 |")
         await pilot.pause()
@@ -1772,12 +1772,12 @@ async def test_screen_rejects_all_leaves_inside_unstable_streaming_markdown() ->
         selection_leaves = [
             widget
             for widget in markdown.query("*")
-            if type(widget).__name__.removeprefix("FirstCoder")
+            if type(widget).__name__.removeprefix("MiniCoder")
             in {"MarkdownBullet", "MarkdownTableCellContents"}
         ]
         assert selection_leaves
         screen = app.screen
-        assert isinstance(screen, FirstCoderScreen)
+        assert isinstance(screen, MiniCoderScreen)
         assert all(screen._selection_is_blocked_by_streaming_markdown(leaf) for leaf in selection_leaves)
 
         markdown.set_selectable(True)
@@ -1788,15 +1788,15 @@ async def test_screen_rejects_all_leaves_inside_unstable_streaming_markdown() ->
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_streaming_markdown_becomes_selectable_only_after_final_update() -> None:
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     async with app.run_test() as pilot:
         app._append_stream_text("partial")
         app._stream_text_started = True
-        markdown = app.query_one("FirstCoderMarkdown.streaming", FirstCoderMarkdown)
+        markdown = app.query_one("MiniCoderMarkdown.streaming", MiniCoderMarkdown)
         assert markdown.allow_select is False
         screen = app.screen
-        assert isinstance(screen, FirstCoderScreen)
+        assert isinstance(screen, MiniCoderScreen)
         assert all(screen._selection_is_blocked_by_streaming_markdown(block) for block in markdown.query("MarkdownBlock"))
 
         app._stream_text_buffer = "final answer"
@@ -1805,18 +1805,18 @@ async def test_streaming_markdown_becomes_selectable_only_after_final_update() -
 
         await app.wait_for_stream_finalization(markdown)
         assert markdown.allow_select is True
-        assert markdown._markdown == "FirstCoder:\n\nfinal answer"
+        assert markdown._markdown == "MiniCoder:\n\nfinal answer"
         assert all(not screen._selection_is_blocked_by_streaming_markdown(block) for block in markdown.query("MarkdownBlock"))
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_closing_one_stream_segment_twice_runs_one_final_markdown_update(monkeypatch) -> None:
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     async with app.run_test() as pilot:
         app._append_stream_text("final answer")
-        markdown = app.query_one("FirstCoderMarkdown.streaming", FirstCoderMarkdown)
+        markdown = app.query_one("MiniCoderMarkdown.streaming", MiniCoderMarkdown)
         await pilot.pause()
         original_update = markdown.update
         final_updates: list[str] = []
@@ -1833,19 +1833,19 @@ async def test_closing_one_stream_segment_twice_runs_one_final_markdown_update(m
         assert markdown.allow_select is False
         await app.wait_for_stream_finalization(markdown)
 
-        assert final_updates == ["FirstCoder:\n\nfinal answer"]
+        assert final_updates == ["MiniCoder:\n\nfinal answer"]
         assert markdown.allow_select is True
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_stream_finalization_records_update_error_without_exiting_tui(monkeypatch) -> None:
-    app = FirstCoderApp()
+    app = MiniCoderApp()
     workers: list[tuple[asyncio.Task[object], dict[str, object]]] = []
 
     async with app.run_test() as pilot:
         app._append_stream_text("final answer")
-        markdown = app.query_one("FirstCoderMarkdown.streaming", FirstCoderMarkdown)
+        markdown = app.query_one("MiniCoderMarkdown.streaming", MiniCoderMarkdown)
         await pilot.pause()
 
         async def failed_update(_source: str) -> None:
@@ -1873,13 +1873,13 @@ async def test_stream_finalization_records_update_error_without_exiting_tui(monk
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_starting_a_new_stream_keeps_an_old_stream_finalization_waitable(monkeypatch) -> None:
     runner = FakeStreamingAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     update_started = asyncio.Event()
     release_update = asyncio.Event()
 
     async with app.run_test() as pilot:
         app._append_stream_text("first answer")
-        markdown = app.query_one("FirstCoderMarkdown.streaming", FirstCoderMarkdown)
+        markdown = app.query_one("MiniCoderMarkdown.streaming", MiniCoderMarkdown)
         await pilot.pause()
 
         async def delayed_update(_source: str) -> None:
@@ -1902,19 +1902,19 @@ async def test_starting_a_new_stream_keeps_an_old_stream_finalization_waitable(m
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
 async def test_stream_segments_on_both_sides_of_tool_become_selectable() -> None:
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     async with app.run_test() as pilot:
         app._append_stream_text("before tool")
-        first = app.query_one("FirstCoderMarkdown.streaming", FirstCoderMarkdown)
+        first = app.query_one("MiniCoderMarkdown.streaming", MiniCoderMarkdown)
         app._close_stream_segment_for_tool()
         await app.wait_for_stream_finalization(first)
         assert first.allow_select is True
-        assert first._markdown == "FirstCoder:\n\nbefore tool"
+        assert first._markdown == "MiniCoder:\n\nbefore tool"
 
         app._append_stream_text("after tool")
         app._stream_text_started = True
-        widgets = list(app.query("FirstCoderMarkdown.streaming"))
+        widgets = list(app.query("MiniCoderMarkdown.streaming"))
         second = widgets[-1]
         assert second is not first
         assert second.allow_select is False
@@ -1922,13 +1922,13 @@ async def test_stream_segments_on_both_sides_of_tool_become_selectable() -> None
         app._write_chat_response(ChatResponse(provider="fake", model="fake", content="after tool"))
         await app.wait_for_stream_finalization(second)
         assert second.allow_select is True
-        assert second._markdown == "FirstCoder:\n\nafter tool"
+        assert second._markdown == "MiniCoder:\n\nafter tool"
 
 
-def test_firstcoder_app_installs_and_restores_stream_event_handler() -> None:
+def test_minicoder_app_installs_and_restores_stream_event_handler() -> None:
     runner = FakeStreamingAsyncChatRunner()
     original_handler = runner.stream_event_handler
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     previous_handler = app._install_stream_event_handler()
     runner.stream_event_handler(ChatStreamEvent(kind="message_started"))
@@ -1938,11 +1938,11 @@ def test_firstcoder_app_installs_and_restores_stream_event_handler() -> None:
     assert runner.stream_event_handler is original_handler
 
 
-def test_firstcoder_app_streams_text_delta_without_repeating_final_text(monkeypatch) -> None:
+def test_minicoder_app_streams_text_delta_without_repeating_final_text(monkeypatch) -> None:
     runner = FakeStreamingAsyncChatRunner()
     runner.last_display_lines = ["hello"]
     output = FakeOutput()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
 
     previous_handler = app._install_stream_event_handler()
@@ -1951,9 +1951,9 @@ def test_firstcoder_app_streams_text_delta_without_repeating_final_text(monkeypa
     app._write_chat_response(ChatResponse(provider="fake", model="fake", content="hello"))
     app._restore_stream_event_handler(previous_handler)
 
-    assert [type(widget).__name__ for widget in output.mounted] == ["FirstCoderMarkdown"]
+    assert [type(widget).__name__ for widget in output.mounted] == ["MiniCoderMarkdown"]
     assert output.mounted[0].allow_select is True
-    assert output.mounted[0].updates[-1] == "FirstCoder:\n\nhello"
+    assert output.mounted[0].updates[-1] == "MiniCoder:\n\nhello"
     assert app._stream_text_buffer == "hello"
     assert runner.seen == [
         ChatStreamEvent(kind="text_delta", text="he"),
@@ -1963,12 +1963,12 @@ def test_firstcoder_app_streams_text_delta_without_repeating_final_text(monkeypa
 
 def test_closing_stream_segment_twice_without_event_loop_updates_final_snapshot_once(monkeypatch) -> None:
     output = FakeOutput()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
 
     app._append_stream_text("final answer")
     markdown = output.mounted[0]
-    initial_snapshot = "FirstCoder:\n\nfinal answer"
+    initial_snapshot = "MiniCoder:\n\nfinal answer"
     assert markdown.updates == [initial_snapshot]
 
     original_update = markdown.update
@@ -1988,11 +1988,11 @@ def test_closing_stream_segment_twice_without_event_loop_updates_final_snapshot_
     assert markdown.allow_select is True
 
 
-def test_firstcoder_app_streaming_skips_normalized_duplicate_assistant_line(monkeypatch) -> None:
+def test_minicoder_app_streaming_skips_normalized_duplicate_assistant_line(monkeypatch) -> None:
     runner = FakeStreamingAsyncChatRunner()
     runner.last_display_lines = ["hello\n"]
     output = FakeOutput()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
 
     previous_handler = app._install_stream_event_handler()
@@ -2001,12 +2001,12 @@ def test_firstcoder_app_streaming_skips_normalized_duplicate_assistant_line(monk
     app._write_chat_response(ChatResponse(provider="fake", model="fake", content="hello"))
     app._restore_stream_event_handler(previous_handler)
 
-    assert [type(widget).__name__ for widget in output.mounted] == ["FirstCoderMarkdown"]
+    assert [type(widget).__name__ for widget in output.mounted] == ["MiniCoderMarkdown"]
     assert output.mounted[0].allow_select is True
-    assert output.mounted[0].updates[-1] == "FirstCoder:\n\nhello"
+    assert output.mounted[0].updates[-1] == "MiniCoder:\n\nhello"
 
 
-def test_firstcoder_app_streaming_skips_replaying_intermediate_assistant_lines(monkeypatch) -> None:
+def test_minicoder_app_streaming_skips_replaying_intermediate_assistant_lines(monkeypatch) -> None:
     runner = FakeStreamingAsyncChatRunner()
     runner.last_display_lines = [
         "先看详情：",
@@ -2016,7 +2016,7 @@ def test_firstcoder_app_streaming_skips_replaying_intermediate_assistant_lines(m
         "最终结论",
     ]
     output = FakeOutput()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
 
     previous_handler = app._install_stream_event_handler()
@@ -2026,15 +2026,15 @@ def test_firstcoder_app_streaming_skips_replaying_intermediate_assistant_lines(m
     app._write_chat_response(ChatResponse(provider="fake", model="fake", content="最终结论"))
     app._restore_stream_event_handler(previous_handler)
 
-    assert [type(widget).__name__ for widget in output.mounted] == ["FirstCoderMarkdown"]
-    assert output.mounted[0].updates[-1] == "FirstCoder:\n\n最终结论"
+    assert [type(widget).__name__ for widget in output.mounted] == ["MiniCoderMarkdown"]
+    assert output.mounted[0].updates[-1] == "MiniCoder:\n\n最终结论"
     assert [entry.body for entry in app.transcript.entries if entry.kind == TuiEntryKind.ASSISTANT] == ["最终结论"]
 
 
-def test_firstcoder_app_paces_stream_markdown_updates(monkeypatch) -> None:
+def test_minicoder_app_paces_stream_markdown_updates(monkeypatch) -> None:
     runner = FakeStreamingAsyncChatRunner()
     output = FakeOutput()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
     monkeypatch.setattr(app, "set_timer", lambda *args, **kwargs: object())
 
@@ -2043,19 +2043,19 @@ def test_firstcoder_app_paces_stream_markdown_updates(monkeypatch) -> None:
     app._append_stream_text("这里")
 
     markdown = output.mounted[0]
-    assert type(markdown).__name__ == "FirstCoderMarkdown"
+    assert type(markdown).__name__ == "MiniCoderMarkdown"
     assert markdown.allow_select is False
-    assert markdown.updates == ["FirstCoder:\n\n我"]
+    assert markdown.updates == ["MiniCoder:\n\n我"]
     assert app._stream_text_buffer == "我在这里"
 
     app._flush_stream_text()
 
-    assert markdown.updates[-1] == "FirstCoder:\n\n我在这里"
+    assert markdown.updates[-1] == "MiniCoder:\n\n我在这里"
 
 
-def test_firstcoder_app_coalesces_stream_chunks_into_one_ui_callback(monkeypatch) -> None:
+def test_minicoder_app_coalesces_stream_chunks_into_one_ui_callback(monkeypatch) -> None:
     runner = FakeStreamingAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     scheduled: list[object] = []
     appended: list[str] = []
 
@@ -2077,9 +2077,9 @@ def test_firstcoder_app_coalesces_stream_chunks_into_one_ui_callback(monkeypatch
     assert appended == ["我在这里"]
 
 
-def test_firstcoder_app_discards_coalesced_stream_chunks_after_interrupt(monkeypatch) -> None:
+def test_minicoder_app_discards_coalesced_stream_chunks_after_interrupt(monkeypatch) -> None:
     runner = FakeStreamingAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     scheduled: list[object] = []
     appended: list[str] = []
 
@@ -2097,9 +2097,9 @@ def test_firstcoder_app_discards_coalesced_stream_chunks_after_interrupt(monkeyp
     assert appended == []
 
 
-def test_firstcoder_app_stream_markdown_update_uses_latest_snapshot(monkeypatch) -> None:
+def test_minicoder_app_stream_markdown_update_uses_latest_snapshot(monkeypatch) -> None:
     output = FakeOutput()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
     updates: list[str] = []
     update_results: list[FakeMarkdownUpdateResult] = []
     timers: list[object] = []
@@ -2126,17 +2126,17 @@ def test_firstcoder_app_stream_markdown_update_uses_latest_snapshot(monkeypatch)
     app._append_stream_text("这里")
     app._flush_stream_text()
 
-    assert updates == ["FirstCoder:\n\n我"]
+    assert updates == ["MiniCoder:\n\n我"]
 
     update_results[0].finish()
     timers[-1]()
 
-    assert updates == ["FirstCoder:\n\n我", "FirstCoder:\n\n我在这里"]
+    assert updates == ["MiniCoder:\n\n我", "MiniCoder:\n\n我在这里"]
 
 
-def test_firstcoder_app_does_not_scroll_stream_when_render_is_deferred(monkeypatch) -> None:
+def test_minicoder_app_does_not_scroll_stream_when_render_is_deferred(monkeypatch) -> None:
     output = FakeOutput()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
     monkeypatch.setattr(app, "_loop", object())
     monkeypatch.setattr(app, "set_timer", lambda *args, **kwargs: object())
@@ -2150,11 +2150,11 @@ def test_firstcoder_app_does_not_scroll_stream_when_render_is_deferred(monkeypat
     assert output.scroll_end_calls == after_initial_render
 
 
-def test_firstcoder_app_does_not_auto_scroll_stream_when_user_is_reading_history(monkeypatch) -> None:
+def test_minicoder_app_does_not_auto_scroll_stream_when_user_is_reading_history(monkeypatch) -> None:
     output = FakeOutput()
     output.scroll_y = 1
     output.max_scroll_y = 10
-    app = FirstCoderApp()
+    app = MiniCoderApp()
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
 
     app._append_stream_text("hello")
@@ -2163,10 +2163,10 @@ def test_firstcoder_app_does_not_auto_scroll_stream_when_user_is_reading_history
     assert output.scroll_end_calls == 0
 
 
-def test_firstcoder_app_records_streaming_assistant_text_in_transcript(monkeypatch) -> None:
+def test_minicoder_app_records_streaming_assistant_text_in_transcript(monkeypatch) -> None:
     runner = FakeStreamingAsyncChatRunner()
     output = FakeOutput()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
 
     app._append_stream_text("你")
@@ -2177,11 +2177,11 @@ def test_firstcoder_app_records_streaming_assistant_text_in_transcript(monkeypat
     assert assistant_entries[0].body == "你好"
 
 
-def test_firstcoder_app_shows_reasoning_delta_in_activity_line(monkeypatch) -> None:
+def test_minicoder_app_shows_reasoning_delta_in_activity_line(monkeypatch) -> None:
     runner = FakeStreamingAsyncChatRunner()
     output = FakeOutput()
     activity = FakeActivity()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2202,10 +2202,10 @@ def test_firstcoder_app_shows_reasoning_delta_in_activity_line(monkeypatch) -> N
     assert activity.updates[1].rstrip().endswith("0.0s · 0 tools")
 
 
-def test_firstcoder_app_shows_working_indicator_without_reasoning_delta(monkeypatch) -> None:
+def test_minicoder_app_shows_working_indicator_without_reasoning_delta(monkeypatch) -> None:
     output = FakeOutput()
     activity = FakeActivity()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2226,11 +2226,11 @@ def test_firstcoder_app_shows_working_indicator_without_reasoning_delta(monkeypa
     assert activity.updates[1].rstrip().endswith("0.0s · 0 tools")
 
 
-def test_firstcoder_app_animates_working_indicator(monkeypatch) -> None:
+def test_minicoder_app_animates_working_indicator(monkeypatch) -> None:
     output = FakeOutput()
     activity = FakeActivity()
     timer = type("FakeTimer", (), {"stopped": False, "stop": lambda self: setattr(self, "stopped", True)})()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2258,11 +2258,11 @@ def test_firstcoder_app_animates_working_indicator(monkeypatch) -> None:
     assert app._working_timer is None
 
 
-def test_firstcoder_app_streaming_final_response_skips_assistant_display_line(monkeypatch) -> None:
+def test_minicoder_app_streaming_final_response_skips_assistant_display_line(monkeypatch) -> None:
     runner = FakeStreamingAsyncChatRunner()
     runner.last_display_lines = ["hello", "Tool result: echo success: ok"]
     output = FakeOutput()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
 
     previous_handler = app._install_stream_event_handler()
@@ -2271,15 +2271,15 @@ def test_firstcoder_app_streaming_final_response_skips_assistant_display_line(mo
     app._restore_stream_event_handler(previous_handler)
 
     assert sum(isinstance(widget, Markdown) for widget in output.mounted) == 1
-    assert [type(widget).__name__ for widget in output.mounted] == ["FirstCoderMarkdown", "Static"]
+    assert [type(widget).__name__ for widget in output.mounted] == ["MiniCoderMarkdown", "Static"]
     assert output.mounted[0].allow_select is True
 
 
-def test_firstcoder_app_replaces_partial_stream_when_final_response_differs(monkeypatch) -> None:
+def test_minicoder_app_replaces_partial_stream_when_final_response_differs(monkeypatch) -> None:
     runner = FakeStreamingAsyncChatRunner()
     runner.last_display_lines = ["complete ok"]
     output = FakeOutput()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
 
     previous_handler = app._install_stream_event_handler()
@@ -2287,17 +2287,17 @@ def test_firstcoder_app_replaces_partial_stream_when_final_response_differs(monk
     app._write_chat_response(ChatResponse(provider="fake", model="fake", content="complete ok"))
     app._restore_stream_event_handler(previous_handler)
 
-    assert [type(widget).__name__ for widget in output.mounted] == ["FirstCoderMarkdown"]
-    assert output.mounted[0].updates[-1] == "FirstCoder:\n\ncomplete ok"
+    assert [type(widget).__name__ for widget in output.mounted] == ["MiniCoderMarkdown"]
+    assert output.mounted[0].updates[-1] == "MiniCoder:\n\ncomplete ok"
     assert app._stream_text_buffer == "complete ok"
 
 
-def test_firstcoder_app_stops_streaming_status_after_final_response(monkeypatch) -> None:
+def test_minicoder_app_stops_streaming_status_after_final_response(monkeypatch) -> None:
     runner = FakeStreamingAsyncChatRunner()
     output = FakeOutput()
     activity = FakeActivity()
     timer = type("FakeTimer", (), {"stopped": False, "stop": lambda self: setattr(self, "stopped", True)})()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2327,9 +2327,9 @@ def test_firstcoder_app_stops_streaming_status_after_final_response(monkeypatch)
     assert app._activity_timer is None
 
 
-def test_firstcoder_app_stream_event_handler_schedules_ui_updates_on_app_thread(monkeypatch) -> None:
+def test_minicoder_app_stream_event_handler_schedules_ui_updates_on_app_thread(monkeypatch) -> None:
     runner = FakeStreamingAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     calls: list[tuple[str, str]] = []
     scheduled: list[object] = []
 
@@ -2348,9 +2348,9 @@ def test_firstcoder_app_stream_event_handler_schedules_ui_updates_on_app_thread(
     assert calls == [("text", "hello")]
 
 
-def test_firstcoder_app_tool_event_handler_schedules_live_status_on_app_thread(monkeypatch) -> None:
+def test_minicoder_app_tool_event_handler_schedules_live_status_on_app_thread(monkeypatch) -> None:
     runner = FakeToolEventAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     calls: list[str] = []
     scheduled: list[object] = []
 
@@ -2368,12 +2368,12 @@ def test_firstcoder_app_tool_event_handler_schedules_live_status_on_app_thread(m
     assert calls == ["正在调用工具：echo"]
 
 
-def test_firstcoder_app_updates_activity_line_for_tool_events(monkeypatch) -> None:
+def test_minicoder_app_updates_activity_line_for_tool_events(monkeypatch) -> None:
     runner = FakeToolEventAsyncChatRunner()
     output = FakeOutput()
     activity = FakeActivity()
     timer = type("FakeTimer", (), {"stopped": False, "stop": lambda self: setattr(self, "stopped", True)})()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2408,12 +2408,12 @@ def test_firstcoder_app_updates_activity_line_for_tool_events(monkeypatch) -> No
     assert activity.updates[-1].rstrip().endswith("0.0s · 1 tool")
 
 
-def test_firstcoder_app_stops_post_tool_animation_when_next_tool_starts(monkeypatch) -> None:
+def test_minicoder_app_stops_post_tool_animation_when_next_tool_starts(monkeypatch) -> None:
     runner = FakeToolEventAsyncChatRunner()
     output = FakeOutput()
     activity = FakeActivity()
     timer = type("FakeTimer", (), {"stopped": False, "stop": lambda self: setattr(self, "stopped", True)})()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2442,12 +2442,12 @@ def test_firstcoder_app_stops_post_tool_animation_when_next_tool_starts(monkeypa
     assert activity.updates[-1].rstrip().endswith("0.0s · 1 tool")
 
 
-def test_firstcoder_app_activity_line_summarizes_parallel_tool_events(monkeypatch) -> None:
+def test_minicoder_app_activity_line_summarizes_parallel_tool_events(monkeypatch) -> None:
     runner = FakeToolEventAsyncChatRunner()
     output = FakeOutput()
     activity = FakeActivity()
     timer = type("FakeTimer", (), {"stop": lambda self: None})()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2467,11 +2467,11 @@ def test_firstcoder_app_activity_line_summarizes_parallel_tool_events(monkeypatc
     assert activity.updates[-1].rstrip().endswith("0.0s · 2 tools")
 
 
-def test_firstcoder_app_animates_running_tool_status(monkeypatch) -> None:
+def test_minicoder_app_animates_running_tool_status(monkeypatch) -> None:
     output = FakeOutput()
     activity = FakeActivity()
     timer = type("FakeTimer", (), {"stopped": False, "stop": lambda self: setattr(self, "stopped", True)})()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2501,11 +2501,11 @@ def test_firstcoder_app_animates_running_tool_status(monkeypatch) -> None:
     assert app._activity_timer is None
 
 
-def test_firstcoder_app_keeps_elapsed_time_live_after_tool_failure(monkeypatch) -> None:
+def test_minicoder_app_keeps_elapsed_time_live_after_tool_failure(monkeypatch) -> None:
     output = FakeOutput()
     activity = FakeActivity()
     timer = type("FakeTimer", (), {"stopped": False, "stop": lambda self: setattr(self, "stopped", True)})()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
     clock = {"now": 100.0}
 
     def query_one(selector, *args, **kwargs):
@@ -2516,7 +2516,7 @@ def test_firstcoder_app_keeps_elapsed_time_live_after_tool_failure(monkeypatch) 
     monkeypatch.setattr(app, "query_one", query_one)
     monkeypatch.setattr(app, "_loop", object())
     monkeypatch.setattr(app, "set_interval", lambda *args, **kwargs: timer)
-    monkeypatch.setattr("firstcoder.app.tui.time.monotonic", lambda: clock["now"])
+    monkeypatch.setattr("minicoder.app.tui.time.monotonic", lambda: clock["now"])
 
     tool_call = ToolCall(id="call_echo", name="echo", arguments={})
     app._start_turn_metrics()
@@ -2540,10 +2540,10 @@ def test_firstcoder_app_keeps_elapsed_time_live_after_tool_failure(monkeypatch) 
     assert activity.updates[-1].rstrip().endswith("2.5s · 1 tool")
 
 
-def test_firstcoder_app_activity_line_uses_plain_status_text(monkeypatch) -> None:
+def test_minicoder_app_activity_line_uses_plain_status_text(monkeypatch) -> None:
     output = FakeOutput()
     activity = FakeActivity()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2560,11 +2560,11 @@ def test_firstcoder_app_activity_line_uses_plain_status_text(monkeypatch) -> Non
     assert renderable.spans == []
 
 
-def test_firstcoder_app_activity_metrics_are_pinned_right(monkeypatch) -> None:
+def test_minicoder_app_activity_metrics_are_pinned_right(monkeypatch) -> None:
     output = FakeOutput()
     activity = FakeActivity()
     activity.size = type("Size", (), {"width": 42})()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2584,11 +2584,11 @@ def test_firstcoder_app_activity_metrics_are_pinned_right(monkeypatch) -> None:
     assert first.rfind("0.0s · 0 tools") == second.rfind("0.0s · 0 tools")
 
 
-def test_firstcoder_app_animates_streaming_status(monkeypatch) -> None:
+def test_minicoder_app_animates_streaming_status(monkeypatch) -> None:
     output = FakeOutput()
     activity = FakeActivity()
     timer = type("FakeTimer", (), {"stopped": False, "stop": lambda self: setattr(self, "stopped", True)})()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2613,11 +2613,11 @@ def test_firstcoder_app_animates_streaming_status(monkeypatch) -> None:
     assert app._activity_timer is timer
 
 
-def test_firstcoder_app_does_not_restart_streaming_status_for_every_token(monkeypatch) -> None:
+def test_minicoder_app_does_not_restart_streaming_status_for_every_token(monkeypatch) -> None:
     output = FakeOutput()
     activity = FakeActivity()
     timer = type("FakeTimer", (), {"stopped": False, "stop": lambda self: setattr(self, "stopped", True)})()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2639,13 +2639,13 @@ def test_firstcoder_app_does_not_restart_streaming_status_for_every_token(monkey
     assert app._activity_timer is timer
 
 
-def test_firstcoder_app_hides_task_plan_panel_when_session_has_no_plan(monkeypatch) -> None:
+def test_minicoder_app_hides_task_plan_panel_when_session_has_no_plan(monkeypatch) -> None:
     output = FakeOutput()
     panel = FakeTaskPlanPanel()
     view = SessionView(session_id="sess_without_plan")
     session = FakeSession()
     monkeypatch.setattr(session, "rebuild_view", lambda: view)
-    app = FirstCoderApp(current_session=session)
+    app = MiniCoderApp(current_session=session)
 
     def query_one(selector, *args, **kwargs):
         if selector == "#task-plan-panel":
@@ -2659,7 +2659,7 @@ def test_firstcoder_app_hides_task_plan_panel_when_session_has_no_plan(monkeypat
     assert "hidden" in panel.classes
 
 
-def test_firstcoder_app_replays_linear_task_plan_from_current_session_view(monkeypatch) -> None:
+def test_minicoder_app_replays_linear_task_plan_from_current_session_view(monkeypatch) -> None:
     output = FakeOutput()
     panel = FakeTaskPlanPanel()
     view = SessionView(
@@ -2675,7 +2675,7 @@ def test_firstcoder_app_replays_linear_task_plan_from_current_session_view(monke
     )
     session = FakeSession()
     monkeypatch.setattr(session, "rebuild_view", lambda: view)
-    app = FirstCoderApp(current_session=session)
+    app = MiniCoderApp(current_session=session)
 
     def query_one(selector, *args, **kwargs):
         if selector == "#task-plan-panel":
@@ -2688,7 +2688,7 @@ def test_firstcoder_app_replays_linear_task_plan_from_current_session_view(monke
     assert panel.updates[-1] == "Task Plan · linear\n[✓] 恢复代码\n[~] 恢复测试"
 
 
-def test_firstcoder_app_replays_dag_task_plan_from_current_session_view(monkeypatch) -> None:
+def test_minicoder_app_replays_dag_task_plan_from_current_session_view(monkeypatch) -> None:
     output = FakeOutput()
     panel = FakeTaskPlanPanel()
     view = SessionView(
@@ -2705,7 +2705,7 @@ def test_firstcoder_app_replays_dag_task_plan_from_current_session_view(monkeypa
     )
     session = FakeSession()
     monkeypatch.setattr(session, "rebuild_view", lambda: view)
-    app = FirstCoderApp(current_session=session)
+    app = MiniCoderApp(current_session=session)
 
     def query_one(selector, *args, **kwargs):
         if selector == "#task-plan-panel":
@@ -2718,7 +2718,7 @@ def test_firstcoder_app_replays_dag_task_plan_from_current_session_view(monkeypa
     assert panel.updates[-1] == ("Task Plan · dag\n" "Level 0 · parallel\n" "  [✓] 调研 A (a)\n" "  [~] 调研 B (b)\n" "Level 1\n" "  [!] 汇总 (c) · depends on: a, b")
 
 
-def test_firstcoder_app_refreshes_task_plan_immediately_after_successful_plan_tool(monkeypatch) -> None:
+def test_minicoder_app_refreshes_task_plan_immediately_after_successful_plan_tool(monkeypatch) -> None:
     runner = FakeToolEventAsyncChatRunner()
     output = FakeOutput()
     activity = FakeActivity()
@@ -2736,7 +2736,7 @@ def test_firstcoder_app_refreshes_task_plan_immediately_after_successful_plan_to
             ),
         ),
     )
-    app = FirstCoderApp(chat_runner=runner, current_session=session)
+    app = MiniCoderApp(chat_runner=runner, current_session=session)
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2764,10 +2764,10 @@ def test_firstcoder_app_refreshes_task_plan_immediately_after_successful_plan_to
     assert panel.updates[-1] == "Task Plan · linear\n[~] 来自会话"
 
 
-def test_firstcoder_app_skips_same_task_plan_revision_and_updates_existing_panel(monkeypatch) -> None:
+def test_minicoder_app_skips_same_task_plan_revision_and_updates_existing_panel(monkeypatch) -> None:
     output = FakeOutput()
     panel = FakeTaskPlanPanel()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     def query_one(selector, *args, **kwargs):
         if selector == "#task-plan-panel":
@@ -2797,10 +2797,10 @@ def test_firstcoder_app_skips_same_task_plan_revision_and_updates_existing_panel
     assert app.task_plan_panel_state.last_rendered_revision == 2
 
 
-def test_firstcoder_app_clear_output_clears_and_hides_rendered_task_plan_panel(monkeypatch) -> None:
+def test_minicoder_app_clear_output_clears_and_hides_rendered_task_plan_panel(monkeypatch) -> None:
     output = FakeOutput()
     panel = FakeTaskPlanPanel()
-    app = FirstCoderApp()
+    app = MiniCoderApp()
 
     def query_one(selector, *args, **kwargs):
         if selector == "#task-plan-panel":
@@ -2824,11 +2824,11 @@ def test_firstcoder_app_clear_output_clears_and_hides_rendered_task_plan_panel(m
     assert app.task_plan_panel_state.last_rendered_revision is None
 
 
-def test_firstcoder_app_updates_topbar_when_activity_changes(monkeypatch) -> None:
+def test_minicoder_app_updates_topbar_when_activity_changes(monkeypatch) -> None:
     output = FakeOutput()
     activity = FakeActivity()
     topbar = FakeTopbar()
-    app = FirstCoderApp(current_session=FakeSession())
+    app = MiniCoderApp(current_session=FakeSession())
     monkeypatch.setattr(app, "is_mounted", True)
     monkeypatch.setattr(app, "_topbar_width", lambda: 120)
 
@@ -2849,10 +2849,10 @@ def test_firstcoder_app_updates_topbar_when_activity_changes(monkeypatch) -> Non
     assert "[#b28443]waiting · permission[/]" in topbar.updates[-1]
 
 
-def test_firstcoder_app_live_tool_events_filter_final_tool_summary(monkeypatch) -> None:
+def test_minicoder_app_live_tool_events_filter_final_tool_summary(monkeypatch) -> None:
     runner = FakeToolEventAsyncChatRunner()
     output = FakeOutput()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
 
     previous_handler = app._install_tool_event_handler()
@@ -2869,15 +2869,15 @@ def test_firstcoder_app_live_tool_events_filter_final_tool_summary(monkeypatch) 
     assert "正在调用工具：echo" in rendered
     assert "Tool call:" not in rendered
     assert "Tool result:" not in rendered
-    assert [type(widget).__name__ for widget in output.mounted] == ["Static", "FirstCoderMarkdown"]
+    assert [type(widget).__name__ for widget in output.mounted] == ["Static", "MiniCoderMarkdown"]
     assert output.mounted[1].allow_select is True
 
 
-def test_firstcoder_app_starts_new_stream_block_after_tool_event(monkeypatch) -> None:
+def test_minicoder_app_starts_new_stream_block_after_tool_event(monkeypatch) -> None:
     runner = FakeToolEventAsyncChatRunner()
     runner.stream_event_handler = lambda event: None
     output = FakeOutput()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
 
     previous_stream_handler = app._install_stream_event_handler()
@@ -2894,12 +2894,12 @@ def test_firstcoder_app_starts_new_stream_block_after_tool_event(monkeypatch) ->
     app._restore_stream_event_handler(previous_stream_handler)
 
     mounted_types = [type(widget).__name__ for widget in output.mounted]
-    assert mounted_types == ["FirstCoderMarkdown", "Static", "FirstCoderMarkdown"]
+    assert mounted_types == ["MiniCoderMarkdown", "Static", "MiniCoderMarkdown"]
     first_markdown, _, second_markdown = output.mounted
     assert first_markdown.allow_select is True
     assert second_markdown.allow_select is False
-    assert first_markdown.updates[-1] == "FirstCoder:\n\n我先看看。"
-    assert second_markdown.updates[-1] == "FirstCoder:\n\n看完了。"
+    assert first_markdown.updates[-1] == "MiniCoder:\n\n我先看看。"
+    assert second_markdown.updates[-1] == "MiniCoder:\n\n看完了。"
 
 
 def test_permission_requested_tool_event_uses_permission_style() -> None:
@@ -2916,7 +2916,7 @@ def test_permission_requested_tool_event_uses_permission_style() -> None:
             TuiTranscriptEntry(
                 id=1,
                 kind=TuiEntryKind.PERMISSION,
-                body="apply_patch wants to edit firstcoder/app/tui.py",
+                body="apply_patch wants to edit minicoder/app/tui.py",
                 label="permission requested",
                 status="permission_requested",
             )
@@ -2925,11 +2925,11 @@ def test_permission_requested_tool_event_uses_permission_style() -> None:
     )
 
 
-def test_firstcoder_app_renders_bypass_prewrite_review_without_permission_prompt(monkeypatch) -> None:
+def test_minicoder_app_renders_bypass_prewrite_review_without_permission_prompt(monkeypatch) -> None:
     runner = FakeToolEventAsyncChatRunner()
     output = FakeOutput()
     activity = FakeActivity()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     def query_one(selector, *args, **kwargs):
         if selector == "#activity":
@@ -2994,9 +2994,9 @@ def test_plain_static_renders_tool_arguments_with_markup_characters_as_text() ->
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_displays_live_tool_status_during_turn() -> None:
+async def test_minicoder_app_displays_live_tool_status_during_turn() -> None:
     runner = FakeToolEventAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -3013,9 +3013,9 @@ async def test_firstcoder_app_displays_live_tool_status_during_turn() -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_recalls_input_history_with_arrow_keys() -> None:
+async def test_minicoder_app_recalls_input_history_with_arrow_keys() -> None:
     runner = FakeAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -3042,10 +3042,10 @@ async def test_firstcoder_app_recalls_input_history_with_arrow_keys() -> None:
     assert runner.inputs == ["first", "second"]
 
 
-def test_firstcoder_app_displays_pending_permission_prompt_immediately(monkeypatch) -> None:
+def test_minicoder_app_displays_pending_permission_prompt_immediately(monkeypatch) -> None:
     runner = FakePermissionWaitingRunner()
     output = FakeOutput()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
     monkeypatch.setattr(app, "query_one", lambda *args, **kwargs: output)
 
     app._write_chat_response(ChatResponse(provider="fake", model="fake", content="等待权限确认。"))
@@ -3063,9 +3063,9 @@ def test_firstcoder_app_displays_pending_permission_prompt_immediately(monkeypat
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_displays_chat_errors_from_worker() -> None:
+async def test_minicoder_app_displays_chat_errors_from_worker() -> None:
     runner = FailingAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -3078,9 +3078,9 @@ async def test_firstcoder_app_displays_chat_errors_from_worker() -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_rejects_chat_input_while_turn_is_running() -> None:
+async def test_minicoder_app_rejects_chat_input_while_turn_is_running() -> None:
     runner = BlockingAsyncChatRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -3099,9 +3099,9 @@ async def test_firstcoder_app_rejects_chat_input_while_turn_is_running() -> None
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_routes_permission_answer_to_resume() -> None:
+async def test_minicoder_app_routes_permission_answer_to_resume() -> None:
     runner = FakePermissionResumeRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -3115,9 +3115,9 @@ async def test_firstcoder_app_routes_permission_answer_to_resume() -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_routes_permission_rejection_feedback_to_resume() -> None:
+async def test_minicoder_app_routes_permission_rejection_feedback_to_resume() -> None:
     runner = FakePermissionResumeRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")
@@ -3131,9 +3131,9 @@ async def test_firstcoder_app_routes_permission_rejection_feedback_to_resume() -
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("anyio_backend", ["asyncio"])
-async def test_firstcoder_app_permission_resume_keeps_same_active_turn_metrics(monkeypatch) -> None:
+async def test_minicoder_app_permission_resume_keeps_same_active_turn_metrics(monkeypatch) -> None:
     runner = FakePermissionMidTurnRunner()
-    app = FirstCoderApp(chat_runner=runner)
+    app = MiniCoderApp(chat_runner=runner)
 
     async with app.run_test() as pilot:
         await pilot.click("#input")

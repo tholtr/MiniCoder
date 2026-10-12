@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from firstcoder.tools import create_builtin_registry
-from firstcoder.tools.apply_patch import create_apply_patch_tool
-from firstcoder.tools.delete import create_delete_tool
-from firstcoder.tools.edit import create_edit_tool
-from firstcoder.tools.write import create_write_tool
+from minicoder.tools import create_builtin_registry
+from minicoder.tools.apply_patch import create_apply_patch_tool
+from minicoder.tools.delete import create_delete_tool
+from minicoder.tools.edit import create_edit_tool
+from minicoder.tools.write import create_write_tool
 
 
 def test_apply_patch_updates_file(tmp_path):

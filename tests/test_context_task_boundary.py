@@ -1,7 +1,7 @@
 import pytest
 
-from firstcoder.context.runtime_state import SessionRuntimeState
-from firstcoder.context.task_boundary import (
+from minicoder.context.runtime_state import SessionRuntimeState
+from minicoder.context.task_boundary import (
     TaskBoundaryPolicy,
     TaskBoundaryDecision,
     TaskBoundaryObservation,

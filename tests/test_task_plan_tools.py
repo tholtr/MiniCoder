@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.context.writer import SessionEventWriter
-from firstcoder.planning.service import TaskPlanService
-from firstcoder.tools.task_create import create_task_create_tool
-from firstcoder.tools.task_list import create_task_list_tool
-from firstcoder.tools.task_revise import create_task_revise_tool
-from firstcoder.tools.task_update import create_task_update_tool
+from minicoder.context.store import JsonlSessionStore
+from minicoder.context.writer import SessionEventWriter
+from minicoder.planning.service import TaskPlanService
+from minicoder.tools.task_create import create_task_create_tool
+from minicoder.tools.task_list import create_task_list_tool
+from minicoder.tools.task_revise import create_task_revise_tool
+from minicoder.tools.task_update import create_task_update_tool
 
 
 def _tools(tmp_path):

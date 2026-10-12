@@ -3,20 +3,20 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 
-from firstcoder.agent.loop import AgentLoop
-from firstcoder.agent.session import AgentSession
-from firstcoder.agent.task_boundary_classifier import TaskBoundaryClassifier
-from firstcoder.app.runtime import AgentChatRunner, CurrentSessionState
-from firstcoder.context.context_builder import ContextBuilder
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.providers.base import ChatProvider
-from firstcoder.providers.types import (
+from minicoder.agent.loop import AgentLoop
+from minicoder.agent.session import AgentSession
+from minicoder.agent.task_boundary_classifier import TaskBoundaryClassifier
+from minicoder.app.runtime import AgentChatRunner, CurrentSessionState
+from minicoder.context.context_builder import ContextBuilder
+from minicoder.context.store import JsonlSessionStore
+from minicoder.providers.base import ChatProvider
+from minicoder.providers.types import (
     ChatRequest,
     ChatResponse,
     ChatStreamEvent,
     MainRequestOptions,
 )
-from firstcoder.runtime.cancellation import CancellationToken
+from minicoder.runtime.cancellation import CancellationToken
 
 
 @dataclass

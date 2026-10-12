@@ -7,13 +7,13 @@ import time
 from typing import Literal, Sequence
 
 from benchmark.task_boundary_compaction.models import ProviderCallMetric
-from firstcoder.agent.task_boundary_classifier import CLASSIFICATION_MAX_TOKENS
-from firstcoder.providers.base import ChatProvider
-from firstcoder.providers.types import ChatRequest, ChatResponse
+from minicoder.agent.task_boundary_classifier import CLASSIFICATION_MAX_TOKENS
+from minicoder.providers.base import ChatProvider
+from minicoder.providers.types import ChatRequest, ChatResponse
 
 
 CallBucket = Literal["main", "classifier", "l4", "all"]
-_L4_SYSTEM_PREFIX = "你是 FirstCoder 的上下文压缩器。"
+_L4_SYSTEM_PREFIX = "你是 MiniCoder 的上下文压缩器。"
 
 
 @dataclass(frozen=True, slots=True)

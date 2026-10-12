@@ -5,11 +5,11 @@ from dataclasses import dataclass
 import pytest
 
 from benchmark.task_boundary_compaction.seed import seed_old_task_context
-from firstcoder.agent.loop import AgentLoop
-from firstcoder.agent.session import AgentSession
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.providers.base import ChatProvider
-from firstcoder.providers.types import ChatRequest, ChatResponse, MainRequestOptions
+from minicoder.agent.loop import AgentLoop
+from minicoder.agent.session import AgentSession
+from minicoder.context.store import JsonlSessionStore
+from minicoder.providers.base import ChatProvider
+from minicoder.providers.types import ChatRequest, ChatResponse, MainRequestOptions
 
 
 @dataclass

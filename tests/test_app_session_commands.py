@@ -1,28 +1,28 @@
 from pathlib import Path
 
-from firstcoder.app.commands import ContextCommandHandler
-from firstcoder.app.router import CompositeCommandHandler
-from firstcoder.app.runtime import CurrentSessionState
-from firstcoder.app.session_commands import SessionCommandHandler
-from firstcoder.agent.session import AgentSession
-from firstcoder.context.events import SessionEvent
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.context.token_budget import build_context_budget
+from minicoder.app.commands import ContextCommandHandler
+from minicoder.app.router import CompositeCommandHandler
+from minicoder.app.runtime import CurrentSessionState
+from minicoder.app.session_commands import SessionCommandHandler
+from minicoder.agent.session import AgentSession
+from minicoder.context.events import SessionEvent
+from minicoder.context.store import JsonlSessionStore
+from minicoder.context.token_budget import build_context_budget
 
 
 def _context_budget(view):
     return build_context_budget(
         messages=[], tools=[], context_window=32_768, max_output_tokens=4_096
     )
-from firstcoder.context.writer import SessionEventWriter
-from firstcoder.planning.models import Task, TaskPlan
-from firstcoder.session.catalog import SessionCatalog
-from firstcoder.session.fork import ForkSessionService
-from firstcoder.session.new import NewSessionService
-from firstcoder.session.resume import ResumeService
-from firstcoder.session.share import SessionShareService
-from firstcoder.tools.types import Tool, ToolResult
-from firstcoder.providers.types import ToolDefinition
+from minicoder.context.writer import SessionEventWriter
+from minicoder.planning.models import Task, TaskPlan
+from minicoder.session.catalog import SessionCatalog
+from minicoder.session.fork import ForkSessionService
+from minicoder.session.new import NewSessionService
+from minicoder.session.resume import ResumeService
+from minicoder.session.share import SessionShareService
+from minicoder.tools.types import Tool, ToolResult
+from minicoder.providers.types import ToolDefinition
 
 
 class CurrentSession:

@@ -6,7 +6,7 @@ Harbor integrations are grouped by benchmark protocol:
 
 ```text
 benchmark/harbor/
-├── shared/          # FirstCoder adapter, preflight, wheelhouse, summaries
+├── shared/          # MiniCoder adapter, preflight, wheelhouse, summaries
 ├── aider_polyglot/  # Aider Polyglot verifier-feedback plugin and trial
 └── terminal_bench/  # Terminal-Bench runner and fixed six-task manifests
 ```
@@ -22,15 +22,15 @@ environment, and a verifier. Harbor resolves the dataset, starts the task
 environment, runs the selected agent, invokes the verifier after the agent
 exits, and records job and trial artifacts.
 
-FirstCoder deliberately does not implement dataset-specific runners. Harbor is
+MiniCoder deliberately does not implement dataset-specific runners. Harbor is
 the only benchmark integration maintained by this repository.
 
-## How FirstCoder participates
+## How MiniCoder participates
 
-`benchmark.harbor.shared.firstcoder_agent:FirstCoderHarborAgent` is an installed-agent
+`benchmark.harbor.shared.minicoder_agent:MiniCoderHarborAgent` is an installed-agent
 adapter. For each task it stages only `pyproject.toml`, `README.md`, and
-`firstcoder/`, creates an isolated agent virtual environment, and runs one
-non-interactive `firstcoder --benchmark` turn in Harbor's task directory.
+`minicoder/`, creates an isolated agent virtual environment, and runs one
+non-interactive `minicoder --benchmark` turn in Harbor's task directory.
 
 The adapter does not copy `.git`, `.venv`, local sessions, `.env`, or other
 workspace files. It receives the task instruction but does not inspect verifier
@@ -42,7 +42,7 @@ The upstream Aider Polyglot benchmark permits one repair turn after the first
 test run fails. For an Aider-comparable local run, opt in to the benchmark-only
 plugin below. It keeps the first agent turn blind to verifier files, and only
 after a real `reward=0` sends the verifier's test output back through the same
-FirstCoder session. Timeouts, missing reward files, and provider failures do
+MiniCoder session. Timeouts, missing reward files, and provider failures do
 not receive a repair turn.
 
 For a long-running local suite, classify infrastructure failures separately from `reward=0`: network/provider errors, Docker environment failures, timeouts, and a verifier that fails before writing `reward.txt` do not carry the same interpretation as an implementation failing its tests. The run report documents examples and recovery commands.
@@ -50,7 +50,7 @@ For a long-running local suite, classify infrastructure failures separately from
 ```sh
 PYTHONPATH="$PWD" .venv/bin/harbor run \
   -p .local/harbor-datasets/aider-polyglot \
-  -a benchmark.harbor.shared.firstcoder_agent:FirstCoderHarborAgent \
+  -a benchmark.harbor.shared.minicoder_agent:MiniCoderHarborAgent \
   --plugin benchmark.harbor.aider_polyglot.aider_feedback_plugin:AiderFeedbackPlugin \
   -m gpt-5.6-luna -n 2 -k 1 \
   --ak max_tool_rounds=120 --ak reasoning_effort=high \
@@ -62,7 +62,7 @@ protocol does not explicitly allow test-feedback repair rounds.
 
 ## Install Harbor
 
-Install Harbor in FirstCoder's development environment:
+Install Harbor in MiniCoder's development environment:
 
 ```sh
 .venv/bin/python -m pip install 'harbor==0.18.0'
@@ -99,39 +99,39 @@ your own values:
 zsh -lic 'export PYTHONPATH="$PWD"; .venv/bin/harbor run \
   -d DATASET_NAME \
   -i TASK_NAME \
-  -a benchmark.harbor.shared.firstcoder_agent:FirstCoderHarborAgent \
+  -a benchmark.harbor.shared.minicoder_agent:MiniCoderHarborAgent \
   -m Yuren/gpt-5.6-terra \
   -n 1 -k 1 --ak max_tool_rounds=120 --ak reasoning_effort=medium \
   --agent-setup-timeout-multiplier 3 \
-  --ae FIRSTCODER_PROVIDER_NAME=PROVIDER \
-  --ae FIRSTCODER_MODEL=gpt-5.6-terra \
-  --ae FIRSTCODER_BASE_URL=https://provider.example/v1 \
-  --ae "FIRSTCODER_API_KEY=\${FIRSTCODER_API_KEY}" \
-  --ae FIRSTCODER_DISABLE_GLOBAL_SKILLS=1 \
+  --ae MINICODER_PROVIDER_NAME=PROVIDER \
+  --ae MINICODER_MODEL=gpt-5.6-terra \
+  --ae MINICODER_BASE_URL=https://provider.example/v1 \
+  --ae "MINICODER_API_KEY=\${MINICODER_API_KEY}" \
+  --ae MINICODER_DISABLE_GLOBAL_SKILLS=1 \
   -o benchmark/runs/harbor/smoke -y'
 ```
 
-`-m` records model metadata in Harbor. The `FIRSTCODER_*` variables configure
-the FirstCoder process inside the task. Do not add `--upload` unless publishing
+`-m` records model metadata in Harbor. The `MINICODER_*` variables configure
+the MiniCoder process inside the task. Do not add `--upload` unless publishing
 results is explicitly intended.
 
-`reasoning_effort` is optional and is passed to FirstCoder as a provider-specific
+`reasoning_effort` is optional and is passed to MiniCoder as a provider-specific
 model request field. Whether values such as `low`, `medium`, or `high` are
 accepted depends on the selected provider/model.
 
 ## Reuse dependencies across trials
 
-By default Harbor gives every trial a fresh container, so FirstCoder's Python
+By default Harbor gives every trial a fresh container, so MiniCoder's Python
 dependencies are downloaded again for each task. The adapter installs into a
-shared pip/uv cache at `/opt/firstcoder-cache`. Bind-mount a host directory
+shared pip/uv cache at `/opt/minicoder-cache`. Bind-mount a host directory
 there with Harbor's `--mounts` so wheels download once and are reused across
 trials and concurrent containers:
 
 ```sh
-mkdir -p "$HOME/.cache/firstcoder-harbor"
+mkdir -p "$HOME/.cache/minicoder-harbor"
 .venv/bin/harbor run \
   ... \
-  --mounts '[{"type":"bind","source":"'"$HOME"'/.cache/firstcoder-harbor","target":"/opt/firstcoder-cache"}]' \
+  --mounts '[{"type":"bind","source":"'"$HOME"'/.cache/minicoder-harbor","target":"/opt/minicoder-cache"}]' \
   ...
 ```
 
@@ -155,14 +155,14 @@ Harbor 的 Linux/Python 3.11 容器准备 wheelhouse：
 
 ```powershell
 $mounts = .\.venv\Scripts\python.exe -m benchmark.harbor.shared.preflight `
-  --cache-dir "$HOME\.cache\firstcoder-harbor" `
-  --wheelhouse "$HOME\.cache\firstcoder-harbor\wheelhouse" `
+  --cache-dir "$HOME\.cache\minicoder-harbor" `
+  --wheelhouse "$HOME\.cache\minicoder-harbor\wheelhouse" `
   --print-mounts
 ```
 
-adapter 会优先在 `/opt/firstcoder-wheelhouse` 查找依赖，缺少 wheel 时仍可回退到索引和
+adapter 会优先在 `/opt/minicoder-wheelhouse` 查找依赖，缺少 wheel 时仍可回退到索引和
 共享 cache。若 wheelhouse 已验证完整，可向 agent 环境传入
-`FIRSTCODER_WHEELHOUSE_ONLY=1`，此时缺 wheelhouse 或缺依赖会明确失败，不会静默联网。
+`MINICODER_WHEELHOUSE_ONLY=1`，此时缺 wheelhouse 或缺依赖会明确失败，不会静默联网。
 
 ## Preflight
 
@@ -171,8 +171,8 @@ adapter 会优先在 `/opt/firstcoder-wheelhouse` 查找依赖，缺少 wheel �
 ```powershell
 .\.venv\Scripts\python.exe -m benchmark.harbor.shared.preflight `
   --env-file .env.harbor `
-  --cache-dir "$HOME\.cache\firstcoder-harbor" `
-  --wheelhouse "$HOME\.cache\firstcoder-harbor\wheelhouse" `
+  --cache-dir "$HOME\.cache\minicoder-harbor" `
+  --wheelhouse "$HOME\.cache\minicoder-harbor\wheelhouse" `
   --model MODEL_ID `
   --image-file benchmark/harbor/terminal_bench/terminal-bench-ab-images.txt
 ```
@@ -200,8 +200,8 @@ adapter 会优先在 `/opt/firstcoder-wheelhouse` 查找依赖，缺少 wheel �
 ```powershell
 .\.venv\Scripts\python.exe -m benchmark.harbor.terminal_bench.run_terminal_bench_ab `
   --env-file .env.harbor `
-  --cache-dir "$HOME\.cache\firstcoder-harbor" `
-  --wheelhouse "$HOME\.cache\firstcoder-harbor\wheelhouse" `
+  --cache-dir "$HOME\.cache\minicoder-harbor" `
+  --wheelhouse "$HOME\.cache\minicoder-harbor\wheelhouse" `
   --model MODEL_ID `
   --reasoning-effort MODEL_SUPPORTED_VALUE `
   --label phase6
@@ -232,12 +232,12 @@ the trial reward and verifier logs as the completion evidence.
 
 加 `--json` 可输出机器可读结果；加 `--compare CANDIDATE_RUN` 可输出 A/B 的百分点变化。
 汇总器会读取每个 trial 的 `result.json`，并在存在
-`agent/firstcoder-session.jsonl` 时聚合 `agent_turn_telemetry` 的最终回合快照。遥测事件不会
+`agent/minicoder-session.jsonl` 时聚合 `agent_turn_telemetry` 的最终回合快照。遥测事件不会
 进入 provider 消息，也不包含提示词、工具参数、工具输出或 secret。
 
 ## Windows
 
 Use Docker Desktop in Linux containers mode for normal Harbor task images. Run
-the commands from a shell whose working directory is the FirstCoder repository,
+the commands from a shell whose working directory is the MiniCoder repository,
 keep `PYTHONPATH` pointed at that checkout, and start with one task and `-n 1`.
 Verify the agent log and verifier result before increasing concurrency.

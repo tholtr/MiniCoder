@@ -1,5 +1,5 @@
-from firstcoder.session.models import RedactionOptions
-from firstcoder.session.redaction import redact_text
+from minicoder.session.models import RedactionOptions
+from minicoder.session.redaction import redact_text
 
 
 def test_redact_text_redacts_secret_assignments() -> None:
@@ -30,7 +30,7 @@ def test_redact_text_redacts_json_like_secret_values() -> None:
 
 
 def test_redact_text_redacts_windows_and_posix_paths() -> None:
-    text = "read D:\\Komor_Code\\FirstCoder\\README.md and /home/user/project/secret.txt"
+    text = "read D:\\Komor_Code\\MiniCoder\\README.md and /home/user/project/secret.txt"
 
     redacted = redact_text(text)
 

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from firstcoder.tools import fetch as fetch_module
-from firstcoder.tools import web_search as web_search_module
-from firstcoder.tools.fetch import create_fetch_tool
-from firstcoder.tools.web_search import create_web_search_tool
-from firstcoder.tools import create_builtin_registry
+from minicoder.tools import fetch as fetch_module
+from minicoder.tools import web_search as web_search_module
+from minicoder.tools.fetch import create_fetch_tool
+from minicoder.tools.web_search import create_web_search_tool
+from minicoder.tools import create_builtin_registry
 
 
 def test_fetch_reads_text_response(monkeypatch, tmp_path):
@@ -108,7 +108,7 @@ def test_web_search_uses_parallel_by_default(monkeypatch, tmp_path):
     monkeypatch.setattr(web_search_module.request, "urlopen", fake_urlopen)
     registry = create_builtin_registry(tmp_path, include_network_tools=True)
 
-    result = registry.execute("web_search", {"query": "FirstCoder agent", "num_results": 3})
+    result = registry.execute("web_search", {"query": "MiniCoder agent", "num_results": 3})
 
     assert result.ok is True
     assert "search.parallel.ai" in captured["url"]
@@ -136,7 +136,7 @@ def test_web_search_falls_back_to_exa_with_api_key(monkeypatch, tmp_path):
     monkeypatch.setattr(web_search_module.request, "urlopen", fake_urlopen)
     registry = create_builtin_registry(tmp_path, include_network_tools=True)
 
-    result = registry.execute("web_search", {"query": "FirstCoder"})
+    result = registry.execute("web_search", {"query": "MiniCoder"})
 
     assert result.ok is True
     assert result.content == "exa results"
@@ -153,11 +153,11 @@ def test_web_search_redacts_exa_api_key_from_result_data(monkeypatch, tmp_path):
         return _fake_web_search_response("search results")
 
     monkeypatch.setenv("EXA_API_KEY", "secret-token")
-    monkeypatch.setenv("FIRSTCODER_WEBSEARCH_PROVIDER", "exa")
+    monkeypatch.setenv("MINICODER_WEBSEARCH_PROVIDER", "exa")
     monkeypatch.setattr(web_search_module.request, "urlopen", fake_urlopen)
     registry = create_builtin_registry(tmp_path, include_network_tools=True)
 
-    result = registry.execute("web_search", {"query": "FirstCoder"})
+    result = registry.execute("web_search", {"query": "MiniCoder"})
 
     assert "secret-token" in captured["url"]
     assert result.ok is True
@@ -209,7 +209,7 @@ def test_web_search_normalizes_common_model_boolean_livecrawl(monkeypatch, tmp_p
     monkeypatch.setattr(web_search_module.request, "urlopen", fake_urlopen)
     registry = create_builtin_registry(tmp_path, include_network_tools=True)
 
-    result = registry.execute("web_search", {"query": "FirstCoder", "livecrawl": "false"})
+    result = registry.execute("web_search", {"query": "MiniCoder", "livecrawl": "false"})
 
     assert result.ok is True
     # Parallel 不支持 livecrawl，所以 body 里不该有 livecrawl

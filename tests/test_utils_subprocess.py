@@ -10,8 +10,8 @@ import time
 
 import pytest
 
-from firstcoder.runtime.cancellation import CancellationToken
-from firstcoder.utils.subprocess import CommandResult, run_command
+from minicoder.runtime.cancellation import CancellationToken
+from minicoder.utils.subprocess import CommandResult, run_command
 
 
 class TestRunCommand:

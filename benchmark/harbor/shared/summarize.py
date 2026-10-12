@@ -1,4 +1,4 @@
-"""离线汇总 Harbor 运行结果与 FirstCoder 回合遥测。"""
+"""离线汇总 Harbor 运行结果与 MiniCoder 回合遥测。"""
 
 from __future__ import annotations
 
@@ -131,7 +131,7 @@ def render_markdown(summary: HarborRunSummary) -> str:
         lines.extend(
             [
                 "",
-                "## FirstCoder 遥测",
+                "## MiniCoder 遥测",
                 "",
                 f"- 含遥测 trial：{telemetry['trials_with_telemetry']}",
                 f"- 最终回合快照：{telemetry['turns']}",
@@ -211,7 +211,7 @@ def _summarize_telemetry(trial_dirs: Iterable[Path]) -> dict[str, Any] | None:
     latest: dict[tuple[str, str, int], tuple[int, dict[str, Any]]] = {}
     trials_with_telemetry = 0
     for trial_dir in trial_dirs:
-        path = trial_dir / "agent" / "firstcoder-session.jsonl"
+        path = trial_dir / "agent" / "minicoder-session.jsonl"
         if not path.is_file():
             continue
         found = False
@@ -296,7 +296,7 @@ def _counter_lines(values: dict[str, int]) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="汇总 Harbor result.json 与 FirstCoder 遥测")
+    parser = argparse.ArgumentParser(description="汇总 Harbor result.json 与 MiniCoder 遥测")
     parser.add_argument("run_dir", type=Path)
     parser.add_argument("--compare", type=Path)
     parser.add_argument("--json", action="store_true")

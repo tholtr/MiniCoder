@@ -34,20 +34,20 @@ from benchmark.task_boundary_compaction.loop import BenchmarkAgentLoop
 from benchmark.task_boundary_compaction.models import Arm, CompactionMetric, ProviderCallMetric, TrialResult
 from benchmark.task_boundary_compaction.provider_observer import RecordingProvider
 from benchmark.task_boundary_compaction.seed import seed_old_task_context
-from firstcoder.agent.loop_limits import AgentLoopLimits
-from firstcoder.agent.session import AgentSession, create_project_permission_manager
-from firstcoder.config.settings import load_config
-from firstcoder.context.llm_compact import LlmCompactService
-from firstcoder.context.manager import ContextWindowManager
-from firstcoder.context.provider_summarizer import ProviderLlmCompactSummarizer
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.permissions.grants import FilePermissionGrantStore
-from firstcoder.permissions.types import PermissionMode
-from firstcoder.providers.base import ChatProvider
-from firstcoder.providers.factory import create_provider_for_model
-from firstcoder.providers.types import MainRequestOptions
-from firstcoder.tools.builtin import create_builtin_registry
-from firstcoder.utils.sandbox_access import SandboxAccess
+from minicoder.agent.loop_limits import AgentLoopLimits
+from minicoder.agent.session import AgentSession, create_project_permission_manager
+from minicoder.config.settings import load_config
+from minicoder.context.llm_compact import LlmCompactService
+from minicoder.context.manager import ContextWindowManager
+from minicoder.context.provider_summarizer import ProviderLlmCompactSummarizer
+from minicoder.context.store import JsonlSessionStore
+from minicoder.permissions.grants import FilePermissionGrantStore
+from minicoder.permissions.types import PermissionMode
+from minicoder.providers.base import ChatProvider
+from minicoder.providers.factory import create_provider_for_model
+from minicoder.providers.types import MainRequestOptions
+from minicoder.tools.builtin import create_builtin_registry
+from minicoder.utils.sandbox_access import SandboxAccess
 
 
 CaseDefinition: TypeAlias = ControlledCase | HistoricalCase | AiderChainCase
@@ -811,7 +811,7 @@ def _aider_image_tag(*, config: RunConfig, case_id: str, arm: Arm) -> str:
     digest = hashlib.sha256(
         f"{config.run_id}:{config.repetition}:{case_id}:{arm.value}".encode("utf-8")
     ).hexdigest()[:20]
-    return f"firstcoder-tbc-{digest}"
+    return f"minicoder-tbc-{digest}"
 
 
 def _event_summary(

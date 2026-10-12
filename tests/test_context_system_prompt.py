@@ -1,4 +1,4 @@
-from firstcoder.context.system_prompt import (
+from minicoder.context.system_prompt import (
     PromptPrefixCache,
     SystemPromptInputs,
     SystemPromptBuilder,
@@ -7,8 +7,8 @@ from firstcoder.context.system_prompt import (
 
 def _inputs(**overrides: object) -> SystemPromptInputs:
     values = {
-        "base_rules": "你是 FirstCoder。",
-        "agents_md": "项目规则：上下文放在 firstcoder/context。",
+        "base_rules": "你是 MiniCoder。",
+        "agents_md": "项目规则：上下文放在 minicoder/context。",
         "provider_name": "openai-compatible",
         "provider_capabilities": {"tool_calling": True, "parallel_tool_calls": False},
         "permission_policy": {"shell": "confirm", "read": "allow"},
@@ -35,7 +35,7 @@ def test_system_prompt_cache_reuses_prefix_when_fingerprint_matches() -> None:
     assert first.fingerprint == second.fingerprint
     assert first is second
     assert first.messages[0].role == "system"
-    assert "你是 FirstCoder。" in first.messages[0].content
+    assert "你是 MiniCoder。" in first.messages[0].content
 
 
 def test_agents_md_change_invalidates_system_prompt_fingerprint() -> None:

@@ -6,11 +6,11 @@ from unittest.mock import patch
 
 import pytest
 
-from firstcoder.permissions.policy import DefaultPermissionPolicy
-from firstcoder.permissions.types import PermissionAction, PermissionMode, PermissionRequest
-from firstcoder.tools.fetch import _is_private_or_local_url, _resolves_to_private_ip
-from firstcoder.utils.execution_sandbox import ExecutionSandbox
-from firstcoder.utils.sandbox_access import SandboxAccessMode
+from minicoder.permissions.policy import DefaultPermissionPolicy
+from minicoder.permissions.types import PermissionAction, PermissionMode, PermissionRequest
+from minicoder.tools.fetch import _is_private_or_local_url, _resolves_to_private_ip
+from minicoder.utils.execution_sandbox import ExecutionSandbox
+from minicoder.utils.sandbox_access import SandboxAccessMode
 
 
 class TestEnvironmentFiltering:

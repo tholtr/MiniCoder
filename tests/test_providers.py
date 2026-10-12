@@ -7,11 +7,11 @@ import threading
 
 import pytest
 
-from firstcoder.providers.anthropic_provider import AnthropicProvider
-from firstcoder.providers.base import ChatProvider
-from firstcoder.providers.errors import ProviderError, ProviderErrorKind
-from firstcoder.providers.openai_compatible import OpenAICompatibleProvider
-from firstcoder.providers.types import (
+from minicoder.providers.anthropic_provider import AnthropicProvider
+from minicoder.providers.base import ChatProvider
+from minicoder.providers.errors import ProviderError, ProviderErrorKind
+from minicoder.providers.openai_compatible import OpenAICompatibleProvider
+from minicoder.providers.types import (
     ChatMessage,
     ChatRequest,
     ProviderCapabilities,

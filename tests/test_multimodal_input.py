@@ -4,21 +4,21 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from firstcoder.input import clipboard
-from firstcoder.agent.session import AgentSession
-from firstcoder.context.context_builder import ContextBuilder
-from firstcoder.context.models import AgentMessage, MessagePart, SessionView
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.input.attachments import (
+from minicoder.input import clipboard
+from minicoder.agent.session import AgentSession
+from minicoder.context.context_builder import ContextBuilder
+from minicoder.context.models import AgentMessage, MessagePart, SessionView
+from minicoder.context.store import JsonlSessionStore
+from minicoder.input.attachments import (
     attach_path,
     prepare_attachments_for_session,
     extract_explicit_image_references,
     resolve_explicit_image_references,
     resolve_paste_attachments,
 )
-from firstcoder.providers.anthropic_provider import AnthropicProvider
-from firstcoder.providers.openai_compatible import OpenAICompatibleProvider
-from firstcoder.providers.types import ChatMessage, ContentPart, ProviderCapabilities
+from minicoder.providers.anthropic_provider import AnthropicProvider
+from minicoder.providers.openai_compatible import OpenAICompatibleProvider
+from minicoder.providers.types import ChatMessage, ContentPart, ProviderCapabilities
 
 PNG_1x1 = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde"
@@ -56,7 +56,7 @@ def test_resolve_paste_attachments_from_file_path(tmp_path: Path, monkeypatch) -
     image = tmp_path / "shot.png"
     image.write_bytes(PNG_1x1)
     monkeypatch.setattr(
-        "firstcoder.input.attachments.read_clipboard_image_bytes",
+        "minicoder.input.attachments.read_clipboard_image_bytes",
         lambda: None,
     )
     attachments = resolve_paste_attachments(str(image), include_clipboard_image=True)

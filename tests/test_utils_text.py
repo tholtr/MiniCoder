@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from firstcoder.utils.text import safe_read_text, truncate, truncate_head_tail
+from minicoder.utils.text import safe_read_text, truncate, truncate_head_tail
 
 
 class TestTruncate:

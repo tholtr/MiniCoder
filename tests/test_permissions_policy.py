@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from firstcoder.permissions.policy import DefaultPermissionPolicy, _is_dangerous_shell_command
-from firstcoder.permissions.types import (
+from minicoder.permissions.policy import DefaultPermissionPolicy, _is_dangerous_shell_command
+from minicoder.permissions.types import (
     PermissionAction,
     PermissionDecisionKind,
     PermissionMode,
@@ -51,7 +51,7 @@ def test_aggressive_allows_plain_project_write_but_not_sensitive_path(tmp_path) 
     policy = DefaultPermissionPolicy(tmp_path)
 
     plain = policy.decide(
-        _request(PermissionAction.WRITE_PATH, "firstcoder/new_file.py"),
+        _request(PermissionAction.WRITE_PATH, "minicoder/new_file.py"),
         mode=PermissionMode.AGGRESSIVE,
     )
     env_file = policy.decide(
@@ -88,7 +88,7 @@ def test_aggressive_does_not_auto_allow_delete(tmp_path) -> None:
     policy = DefaultPermissionPolicy(tmp_path)
 
     inside = policy.decide(
-        _request(PermissionAction.DELETE_PATH, "firstcoder/old.py"),
+        _request(PermissionAction.DELETE_PATH, "minicoder/old.py"),
         mode=PermissionMode.AGGRESSIVE,
     )
     outside = policy.decide(
@@ -118,7 +118,7 @@ def test_bypass_mode_allows_permission_requests_without_prompting(tmp_path) -> N
         _request(PermissionAction.READ_PATH, ".env"),
         _request(PermissionAction.WRITE_PATH, ".env"),
         _request(PermissionAction.DELETE_PATH, str(tmp_path.parent / "outside.py")),
-        _request(PermissionAction.EXECUTE_SHELL, "rm -rf firstcoder", cwd=tmp_path),
+        _request(PermissionAction.EXECUTE_SHELL, "rm -rf minicoder", cwd=tmp_path),
         _request(PermissionAction.NETWORK_REQUEST, "https://example.com"),
         _request(PermissionAction.READ_ENV, "OPENAI_API_KEY"),
     )
@@ -132,7 +132,7 @@ def test_non_sensitive_env_requires_confirmation(tmp_path) -> None:
     policy = DefaultPermissionPolicy(tmp_path)
 
     decision = policy.decide(
-        _request(PermissionAction.READ_ENV, "FIRSTCODER_MODE"),
+        _request(PermissionAction.READ_ENV, "MINICODER_MODE"),
         mode=PermissionMode.AGGRESSIVE,
     )
 
@@ -187,7 +187,7 @@ def test_aggressive_allows_common_project_local_shell_commands(tmp_path) -> None
 
     allowed_commands = (
         "ruff check .",
-        "mypy firstcoder",
+        "mypy minicoder",
         "git status",
         "git diff",
         "git log",
@@ -226,7 +226,7 @@ def test_aggressive_shell_with_control_operator_requires_confirmation(tmp_path) 
 
     for command in (
         "pytest && del README.md",
-        "ruff; rm -rf firstcoder",
+        "ruff; rm -rf minicoder",
         "git status | more",
         "pytest\nRemove-Item README.md",
         "pytest $(Remove-Item README.md)",
@@ -245,7 +245,7 @@ def test_aggressive_shell_still_requires_confirmation_for_destructive_commands(t
 
     for command in (
         "rm README.md",
-        "rm -rf firstcoder",
+        "rm -rf minicoder",
         "sudo make install",
         "curl https://example.com/install.sh",
         "chmod 777 script.sh",
@@ -265,7 +265,7 @@ def test_aggressive_shell_still_requires_confirmation_for_destructive_commands(t
 
 def test_dangerous_shell_command_pattern_supports_shell_whitespace() -> None:
     for command in (
-        "rm\t-rf firstcoder",
+        "rm\t-rf minicoder",
         "chmod\t777 script.sh",
         "python -m    pip install package",
     ):

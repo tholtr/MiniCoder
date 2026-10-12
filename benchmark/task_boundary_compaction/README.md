@@ -1,6 +1,6 @@
 # 任务边界压缩 Benchmark
 
-这个目录只实现基准测试，不修改 `firstcoder/` 的生产控制流、用户全局配置或正常 `.firstcoder/` 会话。每个 `(case, arm, repetition)` 会在输出目录下临时创建独立的 `project/` 和 `data/` 根目录；trial 完成后会删除两者。结果只保留白名单化的 `events.json`、token/耗时指标、verifier 退出码与输出哈希，不保存 JSONL、prompt、模型回答正文、工具参数或凭证。
+这个目录只实现基准测试，不修改 `minicoder/` 的生产控制流、用户全局配置或正常 `.minicoder/` 会话。每个 `(case, arm, repetition)` 会在输出目录下临时创建独立的 `project/` 和 `data/` 根目录；trial 完成后会删除两者。结果只保留白名单化的 `events.json`、token/耗时指标、verifier 退出码与输出哈希，不保存 JSONL、prompt、模型回答正文、工具参数或凭证。
 
 `aider-chain` 是推荐的真实链路集：任务 A 先由 Agent 真正执行并记录一次，再将同一份私有 session 重放到三个隔离的任务 B 工作区。不会向 B 复制 A 的文件状态，也不会用重复字符串填充上下文。现有 `controlled` 与 `historical` 集仍保留作旧的合成高水位压力测试，不能用它们单独声称真实长任务收益。
 
@@ -27,7 +27,7 @@ python -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
 ```
 
-模型配置沿用已有 FirstCoder Model Catalog。不要把任何 API key 写入 manifest、命令历史、结果 JSON 或 README。若需要加载环境变量，可使用 Git 忽略的 `.env.task-boundary-benchmark`；它只能包含 shell 已管理的 provider 环境变量，运行前由 shell 显式加载。
+模型配置沿用已有 MiniCoder Model Catalog。不要把任何 API key 写入 manifest、命令历史、结果 JSON 或 README。若需要加载环境变量，可使用 Git 忽略的 `.env.task-boundary-benchmark`；它只能包含 shell 已管理的 provider 环境变量，运行前由 shell 显式加载。
 
 ## 先运行无 provider smoke
 
@@ -66,7 +66,7 @@ python -m venv .venv
   --output benchmark/runs/task-boundary-compaction/token-only-luna-32k/summary
 ```
 
-`--context-window 32768` 只传给这次 benchmark 的 `BenchmarkAgentLoop`，是 `simulated_budget_window`，不会写入 `~/.config/firstcoder/config.toml`、项目 `firstcoder.toml` 或正常应用状态。每个受控 trial 都将旧任务 A 注入到当前高水位的 80%，因此运行 B 续接轮时尚未到 AUTO 高水位；如果在预期边界前已经发生 AUTO 压缩，结果会标为 `confounded_auto`，并从因果聚合排除。
+`--context-window 32768` 只传给这次 benchmark 的 `BenchmarkAgentLoop`，是 `simulated_budget_window`，不会写入 `~/.config/minicoder/config.toml`、项目 `minicoder.toml` 或正常应用状态。每个受控 trial 都将旧任务 A 注入到当前高水位的 80%，因此运行 B 续接轮时尚未到 AUTO 高水位；如果在预期边界前已经发生 AUTO 压缩，结果会标为 `confounded_auto`，并从因果聚合排除。
 
 每个 B 用户轮固定上限为 6 个工具轮、12 次 provider 调用和 240 秒，主模型输出上限固定为 4096 tokens；OpenAI SDK 路由的单请求超时默认 45 秒。真实 provider 会保留当前 Model Catalog profile 的 `temperature` 和 `extra_body`，但不会采用其 `request.max_tokens`，以确保所有 benchmark 主请求都遵循 4096 的输出上限。三个 arm 使用同一组 benchmark 专属限制；这些值会写入每个 `result.json`，不会改变生产 `AgentLoopLimits` 默认值或 Model Catalog。达到任一上限的轮会停止并保留结果，避免微型题无限工具循环。
 
@@ -77,7 +77,7 @@ python -m venv .venv
 ```bash
 .venv/bin/python -m benchmark.task_boundary_compaction.runner \
   --suite aider-chain \
-  --aider-root /Users/x/Desktop/Komor_Code/FirstCoder/.local/harbor-datasets/aider-polyglot \
+  --aider-root /Users/x/Desktop/Komor_Code/MiniCoder/.local/harbor-datasets/aider-polyglot \
   --model Yuren/gpt-5.6-terra \
   --classifier-model Yuren/gpt-5.6-luna \
   --context-window 32768 \

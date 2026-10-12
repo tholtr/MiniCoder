@@ -7,14 +7,14 @@ import re
 import threading
 from dataclasses import dataclass, field
 
-from firstcoder.agent.background import BackgroundJobManager
-from firstcoder.agent.loop import AgentLoop
-from firstcoder.agent.session import AgentSession
-from firstcoder.agent.stagnation import StagnationGuard
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.permissions.types import PermissionMode
-from firstcoder.providers.base import ChatProvider
-from firstcoder.providers.types import (
+from minicoder.agent.background import BackgroundJobManager
+from minicoder.agent.loop import AgentLoop
+from minicoder.agent.session import AgentSession
+from minicoder.agent.stagnation import StagnationGuard
+from minicoder.context.store import JsonlSessionStore
+from minicoder.permissions.types import PermissionMode
+from minicoder.providers.base import ChatProvider
+from minicoder.providers.types import (
     ChatRequest,
     ChatResponse,
     ChatStreamEvent,
@@ -22,9 +22,9 @@ from firstcoder.providers.types import (
     ToolCall,
     ToolDefinition,
 )
-from firstcoder.tools.types import Tool, ToolResult, make_text_result
-from firstcoder.tools.write import create_write_tool
-from firstcoder.tools.ask_user import create_ask_user_tool
+from minicoder.tools.types import Tool, ToolResult, make_text_result
+from minicoder.tools.write import create_write_tool
+from minicoder.tools.ask_user import create_ask_user_tool
 
 
 @dataclass
@@ -823,7 +823,7 @@ def _benchmark_session(
     task: str = "完成当前 benchmark 任务",
 ) -> AgentSession:
     session = AgentSession.from_project(
-        store=JsonlSessionStore(tmp_path / ".firstcoder"),
+        store=JsonlSessionStore(tmp_path / ".minicoder"),
         session_id=session_id,
         project_root=tmp_path,
         tools=tools,
@@ -913,7 +913,7 @@ def test_benchmark_runtime_hides_and_rejects_ask_user(tmp_path) -> None:
 
 def test_interactive_runtime_still_exposes_registered_ask_user(tmp_path) -> None:
     session = AgentSession.from_project(
-        store=JsonlSessionStore(tmp_path / ".firstcoder"),
+        store=JsonlSessionStore(tmp_path / ".minicoder"),
         session_id="sess_interactive_ask_user",
         project_root=tmp_path,
         tools=[create_ask_user_tool()],

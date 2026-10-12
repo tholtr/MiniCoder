@@ -1,1 +1,1 @@
-"""Harbor integration for evaluating FirstCoder on external task datasets."""
+"""Harbor integration for evaluating MiniCoder on external task datasets."""

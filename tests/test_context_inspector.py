@@ -1,8 +1,8 @@
-from firstcoder.context.checkpoint import Checkpoint
-from firstcoder.context.inspector import ContextInspector
-from firstcoder.context.models import AgentMessage, MessagePart, SessionView
-from firstcoder.context.runtime_state import CompactionHistoryEntry, SessionRuntimeState
-from firstcoder.context.token_budget import ContextBudget, build_context_budget
+from minicoder.context.checkpoint import Checkpoint
+from minicoder.context.inspector import ContextInspector
+from minicoder.context.models import AgentMessage, MessagePart, SessionView
+from minicoder.context.runtime_state import CompactionHistoryEntry, SessionRuntimeState
+from minicoder.context.token_budget import ContextBudget, build_context_budget
 
 
 def _budget() -> ContextBudget:

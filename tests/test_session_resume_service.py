@@ -2,23 +2,23 @@ from pathlib import Path
 
 import pytest
 
-from firstcoder.agent.session import AgentSession
-from firstcoder.agent.loop import AgentLoop
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.context.events import SessionEvent
-from firstcoder.context.writer import SessionEventWriter
-from firstcoder.planning.models import Task, TaskPlan
-from firstcoder.providers.base import ChatProvider
-from firstcoder.providers.types import ChatRequest, ChatResponse, ToolCall
-from firstcoder.session.errors import (
+from minicoder.agent.session import AgentSession
+from minicoder.agent.loop import AgentLoop
+from minicoder.context.store import JsonlSessionStore
+from minicoder.context.events import SessionEvent
+from minicoder.context.writer import SessionEventWriter
+from minicoder.planning.models import Task, TaskPlan
+from minicoder.providers.base import ChatProvider
+from minicoder.providers.types import ChatRequest, ChatResponse, ToolCall
+from minicoder.session.errors import (
     SessionCorruptError,
     SessionEmptyError,
     SessionNotFoundError,
     SessionUnsupportedSchemaError,
 )
-from firstcoder.session.resume import ResumeService, validate_session_schema
-from firstcoder.tools.write import create_write_tool
-from firstcoder.permissions.types import PermissionMode
+from minicoder.session.resume import ResumeService, validate_session_schema
+from minicoder.tools.write import create_write_tool
+from minicoder.permissions.types import PermissionMode
 
 
 class FakeProvider(ChatProvider):
@@ -91,7 +91,7 @@ def test_resume_rejects_unsupported_schema_before_bootstrap_side_effects(
     schema_payload: dict[str, str] | None,
     actual_version: str,
 ) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     store.append_event(
         SessionEvent(
             id="evt_created",
@@ -114,7 +114,7 @@ def test_resume_rejects_unsupported_schema_before_bootstrap_side_effects(
         calls.append("bootstrap")
         raise AssertionError("bootstrap must not be constructed")
 
-    monkeypatch.setattr("firstcoder.session.resume.SessionBootstrap", unexpected_bootstrap)
+    monkeypatch.setattr("minicoder.session.resume.SessionBootstrap", unexpected_bootstrap)
     monkeypatch.setattr(
         AgentSession,
         "restore_pending_permission_execution",
@@ -139,7 +139,7 @@ def test_resume_rejects_unsupported_schema_before_bootstrap_side_effects(
 
 
 def test_resume_rejects_future_schema_before_parsing_later_events(tmp_path: Path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     path = store.sessions_dir / "sess_future.jsonl"
     path.write_text(
         '{"id":"evt_created","session_id":"sess_future","type":"session_created",' '"payload":{"context_event_schema_version":"v3"}}\n' '{"future_event_shape":true}\n',
@@ -163,7 +163,7 @@ def test_resume_rejects_corrupt_log_without_valid_session_created(
     tmp_path: Path,
     contents: str,
 ) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     path = store.sessions_dir / "sess_corrupt.jsonl"
     path.write_text(contents, encoding="utf-8")
 
@@ -174,7 +174,7 @@ def test_resume_rejects_corrupt_log_without_valid_session_created(
 def test_schema_validation_rejects_corrupt_json_after_valid_session_created(
     tmp_path: Path,
 ) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     path = store.sessions_dir / "sess_corrupt_tail.jsonl"
     path.write_text(
         '{"id":"evt_created","session_id":"sess_corrupt_tail","type":"session_created",'
@@ -193,7 +193,7 @@ def test_resume_service_rediscovers_current_project_skill_catalog(tmp_path: Path
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir()
     (skills_dir / "brief.md").write_text("# Brief\n\n写简报。", encoding="utf-8")
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     writer = SessionEventWriter(store=store, session_id="sess_skills")
     writer.append_session_created(title="demo")
 
@@ -228,7 +228,7 @@ def test_resume_service_replays_runtime_state_and_known_message_ids(tmp_path: Pa
 
 
 def test_resume_service_keeps_permission_wrapper_for_project_tools(tmp_path: Path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     original = AgentSession.from_project(
         store=store,
         session_id="sess_permissions",
@@ -257,7 +257,7 @@ def test_resume_service_keeps_permission_wrapper_for_project_tools(tmp_path: Pat
 
 
 def test_resume_service_restores_pending_permission_confirmation(tmp_path: Path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     original = AgentSession.from_project(
         store=store,
         session_id="sess_pending_permission",
@@ -287,7 +287,7 @@ def test_resume_service_restores_pending_permission_confirmation(tmp_path: Path)
     result = ResumeService(
         store=store,
         project_root=tmp_path,
-        data_root=tmp_path / ".firstcoder",
+        data_root=tmp_path / ".minicoder",
         tools=[create_write_tool(tmp_path)],
     ).resume("sess_pending_permission")
 
@@ -304,7 +304,7 @@ def test_resume_service_restores_pending_permission_confirmation(tmp_path: Path)
 
 
 def test_resume_service_restores_pending_permission_even_after_grant_exists(tmp_path: Path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     original = AgentSession.from_project(
         store=store,
         session_id="sess_pending_with_grant",
@@ -339,7 +339,7 @@ def test_resume_service_restores_pending_permission_even_after_grant_exists(tmp_
     result = ResumeService(
         store=store,
         project_root=tmp_path,
-        data_root=tmp_path / ".firstcoder",
+        data_root=tmp_path / ".minicoder",
         tools=[create_write_tool(tmp_path)],
     ).resume("sess_pending_with_grant")
 
@@ -348,7 +348,7 @@ def test_resume_service_restores_pending_permission_even_after_grant_exists(tmp_
 
 
 def test_resume_service_has_no_pending_review_after_bypass_write(tmp_path: Path) -> None:
-    store = JsonlSessionStore(tmp_path / ".firstcoder")
+    store = JsonlSessionStore(tmp_path / ".minicoder")
     original = AgentSession.from_project(
         store=store,
         session_id="sess_bypass_write",
@@ -371,7 +371,7 @@ def test_resume_service_has_no_pending_review_after_bypass_write(tmp_path: Path)
     result = ResumeService(
         store=store,
         project_root=tmp_path,
-        data_root=tmp_path / ".firstcoder",
+        data_root=tmp_path / ".minicoder",
         tools=[create_write_tool(tmp_path)],
     ).resume("sess_bypass_write")
 

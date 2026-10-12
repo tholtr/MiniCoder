@@ -1,5 +1,5 @@
-from firstcoder.context.content.detector import is_old_task_part
-from firstcoder.context.models import MessagePart
+from minicoder.context.content.detector import is_old_task_part
+from minicoder.context.models import MessagePart
 
 
 def _part(

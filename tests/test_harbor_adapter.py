@@ -10,8 +10,8 @@ import pytest
 
 pytest.importorskip("harbor")
 
-from benchmark.harbor.shared.firstcoder_agent import (  # noqa: E402
-    FirstCoderHarborAgent,
+from benchmark.harbor.shared.minicoder_agent import (  # noqa: E402
+    MiniCoderHarborAgent,
     _attachment_discovery_command,
     _catalog_bootstrap_command,
     _catalog_bootstrap_script,
@@ -27,38 +27,38 @@ from benchmark.harbor.aider_polyglot.aider_feedback_trial import (  # noqa: E402
 from benchmark.harbor.aider_polyglot.aider_feedback_plugin import AiderFeedbackPlugin  # noqa: E402
 
 
-def test_harbor_agent_builds_quoted_firstcoder_benchmark_command(tmp_path: Path) -> None:
-    agent = FirstCoderHarborAgent(logs_dir=tmp_path, max_tool_rounds="77")
+def test_harbor_agent_builds_quoted_minicoder_benchmark_command(tmp_path: Path) -> None:
+    agent = MiniCoderHarborAgent(logs_dir=tmp_path, max_tool_rounds="77")
 
     command = agent._run_command("Fix the task.\nRun tests.", session_id="task/id")
 
-    assert "/opt/firstcoder-agent/.venv/bin/python -m firstcoder" in command
+    assert "/opt/minicoder-agent/.venv/bin/python -m minicoder" in command
     assert "--benchmark --project ." in command
-    assert "--data-root /tmp/firstcoder-harbor-sessions" in command
+    assert "--data-root /tmp/minicoder-harbor-sessions" in command
     assert "--session-id task_id" in command
     assert "--max-tool-rounds 77" in command
     assert "--max-turn-seconds 1800" in command
-    assert '--model "${FIRSTCODER_PROVIDER_NAME}/${FIRSTCODER_MODEL}"' in command
+    assert '--model "${MINICODER_PROVIDER_NAME}/${MINICODER_MODEL}"' in command
     assert '"[providers." + quote(provider)' in command
-    assert 'api_key_env = \"FIRSTCODER_API_KEY\"' in command
-    assert "FIRSTCODER_BASE_URL" in command
+    assert 'api_key_env = \"MINICODER_API_KEY\"' in command
+    assert "MINICODER_BASE_URL" in command
     assert "vision = true" in command
     assert "'Fix the task." in command
-    assert "/logs/agent/firstcoder.txt" in command
+    assert "/logs/agent/minicoder.txt" in command
     assert "set -o pipefail" in command
-    assert "FIRSTCODER_EXIT" in command
-    assert "/logs/agent/firstcoder-session.jsonl" in command
-    assert "/tmp/firstcoder-harbor-sessions/sessions/task_id.jsonl" in command
-    assert "warning: failed to export FirstCoder benchmark session" in command
+    assert "MINICODER_EXIT" in command
+    assert "/logs/agent/minicoder-session.jsonl" in command
+    assert "/tmp/minicoder-harbor-sessions/sessions/task_id.jsonl" in command
+    assert "warning: failed to export MiniCoder benchmark session" in command
     assert 'api_key = ' not in command
 
 
 def test_harbor_catalog_bootstrap_writes_parseable_standard_config(tmp_path: Path) -> None:
     env = {
         **os.environ,
-        "FIRSTCODER_PROVIDER_NAME": "Yuren",
-        "FIRSTCODER_MODEL": "gpt-test",
-        "FIRSTCODER_BASE_URL": "https://example.test/v1",
+        "MINICODER_PROVIDER_NAME": "Yuren",
+        "MINICODER_MODEL": "gpt-test",
+        "MINICODER_BASE_URL": "https://example.test/v1",
         "XDG_CONFIG_HOME": str(tmp_path / "xdg"),
     }
 
@@ -69,8 +69,8 @@ def test_harbor_catalog_bootstrap_writes_parseable_standard_config(tmp_path: Pat
         check=True,
     )
 
-    config_path = tmp_path / "xdg" / "firstcoder" / "config.toml"
-    assert not (tmp_path / "firstcoder.toml").exists()
+    config_path = tmp_path / "xdg" / "minicoder" / "config.toml"
+    assert not (tmp_path / "minicoder.toml").exists()
     config = config_path.read_text(encoding="utf-8")
     assert 'default_model = "Yuren/gpt-test"' in config
     assert '[providers."Yuren"]' in config
@@ -78,16 +78,16 @@ def test_harbor_catalog_bootstrap_writes_parseable_standard_config(tmp_path: Pat
     assert "vision = true" in config
 
 
-def test_harbor_agent_passes_reasoning_effort_to_firstcoder(tmp_path: Path) -> None:
-    agent = FirstCoderHarborAgent(logs_dir=tmp_path, reasoning_effort="high")
+def test_harbor_agent_passes_reasoning_effort_to_minicoder(tmp_path: Path) -> None:
+    agent = MiniCoderHarborAgent(logs_dir=tmp_path, reasoning_effort="high")
 
     command = agent._run_command("Fix the task.", session_id="task")
 
     assert "--reasoning-effort high" in command
 
 
-def test_harbor_agent_passes_custom_turn_timeout_to_firstcoder(tmp_path: Path) -> None:
-    agent = FirstCoderHarborAgent(logs_dir=tmp_path, max_turn_seconds="3300")
+def test_harbor_agent_passes_custom_turn_timeout_to_minicoder(tmp_path: Path) -> None:
+    agent = MiniCoderHarborAgent(logs_dir=tmp_path, max_turn_seconds="3300")
 
     command = agent._run_command("Fix the task.", session_id="task")
 
@@ -95,7 +95,7 @@ def test_harbor_agent_passes_custom_turn_timeout_to_firstcoder(tmp_path: Path) -
 
 
 def test_harbor_agent_marks_feedback_turn_as_a_session_resume(tmp_path: Path) -> None:
-    agent = FirstCoderHarborAgent(logs_dir=tmp_path)
+    agent = MiniCoderHarborAgent(logs_dir=tmp_path)
 
     command = agent._run_command(
         "The tests are correct. Do not modify the tests.\nTesting errors:\nFAIL",
@@ -108,7 +108,7 @@ def test_harbor_agent_marks_feedback_turn_as_a_session_resume(tmp_path: Path) ->
 
 
 def test_harbor_agent_adds_each_discovered_attachment_to_first_turn(tmp_path: Path) -> None:
-    agent = FirstCoderHarborAgent(logs_dir=tmp_path)
+    agent = MiniCoderHarborAgent(logs_dir=tmp_path)
 
     command = agent._run_command(
         "Inspect the images.",
@@ -120,7 +120,7 @@ def test_harbor_agent_adds_each_discovered_attachment_to_first_turn(tmp_path: Pa
     assert "--attachment /app/code.png" in command
 
 
-def test_harbor_attachment_discovery_command_uses_workspace_and_firstcoder_limits() -> None:
+def test_harbor_attachment_discovery_command_uses_workspace_and_minicoder_limits() -> None:
     command = _attachment_discovery_command("Use `/app/code.png`.")
 
     assert "resolve_explicit_image_references" in command
@@ -129,7 +129,7 @@ def test_harbor_attachment_discovery_command_uses_workspace_and_firstcoder_limit
 
 
 def test_harbor_agent_can_disable_vision_capability(tmp_path: Path) -> None:
-    agent = FirstCoderHarborAgent(logs_dir=tmp_path, supports_vision="false")
+    agent = MiniCoderHarborAgent(logs_dir=tmp_path, supports_vision="false")
 
     command = agent._run_command("Fix the task.", session_id="task")
 
@@ -203,10 +203,10 @@ def test_aider_feedback_plugin_restores_harbor_trial_factory() -> None:
 
 def test_harbor_agent_stages_only_runtime_source_tree(tmp_path: Path) -> None:
     source = tmp_path / "source"
-    package = source / "firstcoder"
+    package = source / "minicoder"
     package.mkdir(parents=True)
-    (source / "pyproject.toml").write_text("[project]\nname = 'firstcoder'\n")
-    (source / "README.md").write_text("# FirstCoder\n")
+    (source / "pyproject.toml").write_text("[project]\nname = 'minicoder'\n")
+    (source / "README.md").write_text("# MiniCoder\n")
     (package / "__init__.py").write_text("__version__ = 'test'\n")
     (package / "module.py").write_text("value = 1\n")
     cache = package / "__pycache__"
@@ -214,19 +214,19 @@ def test_harbor_agent_stages_only_runtime_source_tree(tmp_path: Path) -> None:
     (cache / "module.pyc").write_bytes(b"ignored")
     (source / ".env").write_text("SECRET=not-copied\n")
 
-    agent = FirstCoderHarborAgent(logs_dir=tmp_path / "logs", source_dir=source)
+    agent = MiniCoderHarborAgent(logs_dir=tmp_path / "logs", source_dir=source)
     staged = agent._stage_local_source()
 
     assert (staged / "pyproject.toml").is_file()
     assert (staged / "README.md").is_file()
-    assert (staged / "firstcoder" / "module.py").is_file()
-    assert not (staged / "firstcoder" / "__pycache__").exists()
+    assert (staged / "minicoder" / "module.py").is_file()
+    assert not (staged / "minicoder" / "__pycache__").exists()
     assert not (staged / ".env").exists()
 
 
 def test_harbor_agent_uses_explicit_package_fallback(tmp_path: Path) -> None:
-    package = "https://example.invalid/firstcoder.zip"
-    agent = FirstCoderHarborAgent(
+    package = "https://example.invalid/minicoder.zip"
+    agent = MiniCoderHarborAgent(
         logs_dir=tmp_path,
         source_dir=tmp_path / "missing",
         package=package,
@@ -238,19 +238,19 @@ def test_harbor_agent_uses_explicit_package_fallback(tmp_path: Path) -> None:
 
 def test_harbor_agent_rejects_invalid_tool_round_limit(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="max_tool_rounds"):
-        FirstCoderHarborAgent(logs_dir=tmp_path, max_tool_rounds=0)
+        MiniCoderHarborAgent(logs_dir=tmp_path, max_tool_rounds=0)
 
 
 def test_harbor_agent_rejects_invalid_turn_timeout(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="max_turn_seconds"):
-        FirstCoderHarborAgent(logs_dir=tmp_path, max_turn_seconds=0)
+        MiniCoderHarborAgent(logs_dir=tmp_path, max_turn_seconds=0)
 
     with pytest.raises(ValueError, match="max_turn_seconds"):
-        FirstCoderHarborAgent(logs_dir=tmp_path, max_turn_seconds="nan")
+        MiniCoderHarborAgent(logs_dir=tmp_path, max_turn_seconds="nan")
 
 
 def test_harbor_install_prefers_a_suitable_existing_python() -> None:
-    command = _install_command("/installed-agent/firstcoder-src")
+    command = _install_command("/installed-agent/minicoder-src")
 
     assert "for candidate in python3.12 python3.11 python3" in command
     assert "sys.version_info < (3, 11)" in command
@@ -258,7 +258,7 @@ def test_harbor_install_prefers_a_suitable_existing_python() -> None:
 
 
 def test_harbor_install_can_use_python_venv_without_curl_or_wget() -> None:
-    command = _install_command("/installed-agent/firstcoder-src")
+    command = _install_command("/installed-agent/minicoder-src")
 
     assert 'if [ -x "$UV_BIN" ]; then' in command
     assert '"$PYTHON_BIN" -m venv "$AGENT_ROOT/.venv" --clear' in command
@@ -268,9 +268,9 @@ def test_harbor_install_can_use_python_venv_without_curl_or_wget() -> None:
 
 
 def test_harbor_install_reuses_a_shared_download_cache() -> None:
-    command = _install_command("/installed-agent/firstcoder-src")
+    command = _install_command("/installed-agent/minicoder-src")
 
-    assert "CACHE_DIR=/opt/firstcoder-cache" in command
+    assert "CACHE_DIR=/opt/minicoder-cache" in command
     assert '"$UV_BIN" pip install --python "$AGENT_ROOT/.venv/bin/python" --cache-dir "$CACHE_DIR"' in command
     # The cache stores downloaded wheels only; the venv is still rebuilt per trial.
     assert "--no-cache" not in command
@@ -278,17 +278,17 @@ def test_harbor_install_reuses_a_shared_download_cache() -> None:
 
 
 def test_harbor_install_can_use_optional_read_only_wheelhouse() -> None:
-    command = _install_command("/installed-agent/firstcoder-src")
+    command = _install_command("/installed-agent/minicoder-src")
 
-    assert "WHEELHOUSE_DIR=/opt/firstcoder-wheelhouse" in command
+    assert "WHEELHOUSE_DIR=/opt/minicoder-wheelhouse" in command
     assert 'PIP_FIND_LINKS_ARGS="--find-links $WHEELHOUSE_DIR"' in command
-    assert "FIRSTCODER_WHEELHOUSE_ONLY" in command
+    assert "MINICODER_WHEELHOUSE_ONLY" in command
     assert 'PIP_INDEX_ARGS="--no-index"' in command
     assert "$PIP_INDEX_ARGS $PIP_FIND_LINKS_ARGS" in command
 
 
 def test_harbor_install_retries_the_download_step_with_backoff() -> None:
-    command = _install_command("/installed-agent/firstcoder-src")
+    command = _install_command("/installed-agent/minicoder-src")
 
     assert "install_deps() {" in command
     assert "until install_deps; do" in command
@@ -299,17 +299,17 @@ def test_harbor_install_retries_the_download_step_with_backoff() -> None:
 
 def test_harbor_agent_does_not_require_system_package_installation(tmp_path: Path) -> None:
     source = tmp_path / "source"
-    (source / "firstcoder").mkdir(parents=True)
-    (source / "pyproject.toml").write_text("[project]\nname = 'firstcoder'\n")
-    (source / "README.md").write_text("# FirstCoder\n")
+    (source / "minicoder").mkdir(parents=True)
+    (source / "pyproject.toml").write_text("[project]\nname = 'minicoder'\n")
+    (source / "README.md").write_text("# MiniCoder\n")
 
-    agent = FirstCoderHarborAgent(logs_dir=tmp_path / "logs", source_dir=source)
+    agent = MiniCoderHarborAgent(logs_dir=tmp_path / "logs", source_dir=source)
 
     assert "apt-get" not in agent.install.__doc__ or True
 
 
 def test_harbor_agent_bootstraps_python_311_before_installing(tmp_path: Path) -> None:
-    agent = FirstCoderHarborAgent(logs_dir=tmp_path)
+    agent = MiniCoderHarborAgent(logs_dir=tmp_path)
 
     command = agent._python_setup_command()
 
@@ -335,14 +335,14 @@ def test_harbor_agent_bootstraps_python_311_before_installing(tmp_path: Path) ->
 
 
 def test_harbor_python_bootstrap_fails_clearly_without_supported_package_manager(tmp_path: Path) -> None:
-    command = FirstCoderHarborAgent(logs_dir=tmp_path)._python_setup_command()
+    command = MiniCoderHarborAgent(logs_dir=tmp_path)._python_setup_command()
 
     assert 'PACKAGE_MANAGER="unsupported"' in command
     assert "cannot bootstrap Python 3.11 or newer" in command
 
 
 def test_harbor_python_bootstrap_retries_flaky_package_and_network_steps(tmp_path: Path) -> None:
-    command = FirstCoderHarborAgent(logs_dir=tmp_path)._python_setup_command()
+    command = MiniCoderHarborAgent(logs_dir=tmp_path)._python_setup_command()
 
     # A retry helper with bounded backoff wraps every step that hits a mirror.
     assert "retry() {" in command

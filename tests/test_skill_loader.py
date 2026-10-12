@@ -2,12 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from firstcoder.context.store import JsonlSessionStore
-from firstcoder.context.writer import SessionEventWriter
-from firstcoder.skills.loader import SkillLoadError, SkillLoader
-from firstcoder.skills.models import SkillCatalog, SkillDefinition, SkillSource
-from firstcoder.skills.session import append_skill_loaded
-from firstcoder.tools.load_skill import create_load_skill_tool
+from minicoder.context.store import JsonlSessionStore
+from minicoder.context.writer import SessionEventWriter
+from minicoder.skills.loader import SkillLoadError, SkillLoader
+from minicoder.skills.models import SkillCatalog, SkillDefinition, SkillSource
+from minicoder.skills.session import append_skill_loaded
+from minicoder.tools.load_skill import create_load_skill_tool
 
 
 def test_skill_loader_reads_complete_skill_and_required_files(tmp_path: Path) -> None:

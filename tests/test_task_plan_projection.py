@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from firstcoder.planning.models import Task, TaskPlan
-from firstcoder.planning.projection import (
+from minicoder.planning.models import Task, TaskPlan
+from minicoder.planning.projection import (
     blocked_task_ids,
     project_plan,
     ready_task_ids,

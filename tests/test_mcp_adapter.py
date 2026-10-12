@@ -4,10 +4,10 @@ from dataclasses import dataclass
 
 import pytest
 
-from firstcoder.mcp.adapter import adapt_mcp_tool
-from firstcoder.mcp.models import McpToolDescription
-from firstcoder.permissions.types import PermissionAction
-from firstcoder.tools.permission_registry import permission_request_for_tool
+from minicoder.mcp.adapter import adapt_mcp_tool
+from minicoder.mcp.models import McpToolDescription
+from minicoder.permissions.types import PermissionAction
+from minicoder.tools.permission_registry import permission_request_for_tool
 
 
 @dataclass

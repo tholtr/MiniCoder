@@ -1,15 +1,15 @@
-from firstcoder.permissions.grants import PermissionGrantStore
-from firstcoder.permissions.manager import PermissionManager
-from firstcoder.permissions.policy import DefaultPermissionPolicy
-from firstcoder.permissions.types import (
+from minicoder.permissions.grants import PermissionGrantStore
+from minicoder.permissions.manager import PermissionManager
+from minicoder.permissions.policy import DefaultPermissionPolicy
+from minicoder.permissions.types import (
     PermissionAction,
     PermissionGrant,
     PermissionScopeType,
 )
-from firstcoder.providers.types import ToolDefinition
-from firstcoder.tools.permission_registry import PermissionAwareToolRegistry, permission_request_for_tool
-from firstcoder.tools.registry import ToolRegistry
-from firstcoder.tools.types import Tool, ToolPermissionSpec, make_text_result
+from minicoder.providers.types import ToolDefinition
+from minicoder.tools.permission_registry import PermissionAwareToolRegistry, permission_request_for_tool
+from minicoder.tools.registry import ToolRegistry
+from minicoder.tools.types import Tool, ToolPermissionSpec, make_text_result
 
 
 def _write_tool(calls: list[dict[str, object]] | None = None) -> Tool:

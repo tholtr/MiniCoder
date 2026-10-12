@@ -4,8 +4,8 @@ from dataclasses import fields
 
 import pytest
 
-from firstcoder.planning.models import Task, TaskPlan
-from firstcoder.planning.reducer import (
+from minicoder.planning.models import Task, TaskPlan
+from minicoder.planning.reducer import (
     TaskPatch,
     TaskPlanCommandError,
     TaskPlanRevisionConflict,

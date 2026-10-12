@@ -39,7 +39,7 @@ class ControlledCase:
 
 @dataclass(frozen=True, slots=True)
 class HistoricalCase:
-    """A real FirstCoder change reconstructed from its parent snapshot."""
+    """A real MiniCoder change reconstructed from its parent snapshot."""
 
     benchmark_case: BenchmarkCase
     base_commit: str
@@ -355,7 +355,7 @@ def _copy_aider_workspace(task: AiderTask, *, destination: Path) -> None:
 
 
 def _initialize_disposable_git_repository(project_root: Path) -> None:
-    """Prevent temporary exercises from walking upward into the FirstCoder Git tree."""
+    """Prevent temporary exercises from walking upward into the MiniCoder Git tree."""
 
     subprocess.run(["git", "init", "--quiet"], cwd=project_root, check=True)
     subprocess.run(["git", "add", "--all"], cwd=project_root, check=True)
@@ -363,7 +363,7 @@ def _initialize_disposable_git_repository(project_root: Path) -> None:
         [
             "git",
             "-c",
-            "user.name=FirstCoder Benchmark",
+            "user.name=MiniCoder Benchmark",
             "-c",
             "user.email=benchmark@localhost",
             "commit",
