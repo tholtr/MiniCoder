@@ -1,0 +1,503 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+import json
+from pathlib import Path
+import re
+
+import pytest
+
+from benchmark.task_boundary_compaction.cases import ControlledCase, RepositoryFile
+from benchmark.task_boundary_compaction.models import Arm, BenchmarkCase, TurnSpec
+from benchmark.task_boundary_compaction.report import build_report
+from benchmark.task_boundary_compaction.runner import (
+    RunConfig,
+    _parse_arguments,
+    run_case,
+    run_matrix,
+)
+from firstcoder.agent.loop_limits import AgentLoopLimits
+from firstcoder.providers.base import ChatProvider
+from firstcoder.providers.types import ChatRequest, ChatResponse, TokenUsage
+
+
+@dataclass
+class MatrixProvider(ChatProvider):
+    decisions: list[str] = field(default_factory=lambda: ["new", "same"])
+    requests: list[ChatRequest] = field(default_factory=list)
+
+    @property
+    def name(self) -> str:
+        return "fake"
+
+    @property
+    def model(self) -> str:
+        return "fake-model"
+
+    def complete(self, request: ChatRequest) -> ChatResponse:
+        self.requests.append(request)
+        if request.tools == [] and request.tool_choice == "none" and request.max_tokens == 512:
+            return ChatResponse(
+                provider=self.name,
+                model=self.model,
+                content=(
+                    '{"decision":"'
+                    + self.decisions.pop(0)
+                    + '","basis_message_id":"'
+                    + _basis_message_id(request)
+                    + '"}'
+                ),
+                usage=TokenUsage(input_tokens=5, output_tokens=1, total_tokens=6),
+            )
+        return ChatResponse(
+            provider=self.name,
+            model=self.model,
+            content="已检查实现。",
+            usage=TokenUsage(input_tokens=10, output_tokens=2, total_tokens=12),
+        )
+
+
+@dataclass
+class TimeoutOptionsClient:
+    options: list[dict[str, float | int]] = field(default_factory=list)
+
+    def with_options(self, *, timeout: float, max_retries: int):
+        self.options.append({"timeout": timeout, "max_retries": max_retries})
+        return self
+
+
+def _basis_message_id(request: ChatRequest) -> str:
+    for message in reversed(request.messages):
+        match = re.search(r"basis_message_id=([A-Za-z0-9_]+)", message.content)
+        if match:
+            return match.group(1)
+    raise AssertionError("classifier request did not expose basis_message_id")
+
+
+def _passing_controlled_case() -> ControlledCase:
+    return ControlledCase(
+        benchmark_case=BenchmarkCase(
+            case_id="fake-controlled",
+            kind="controlled",
+            turns=(
+                TurnSpec(message="任务 B：检查已有实现。", expected_decision="new"),
+                TurnSpec(message="继续任务 B：运行测试。", expected_decision="same"),
+            ),
+            verify_command=("python", "-m", "pytest", "-q"),
+            expected_boundary=True,
+        ),
+        repository_files=(
+            RepositoryFile(path="subject.py", content="VALUE = 1\n"),
+            RepositoryFile(
+                path="tests/test_subject.py",
+                content="from subject import VALUE\n\n\ndef test_value_is_ready():\n    assert VALUE == 1\n",
+            ),
+        ),
+    )
+
+
+def test_run_case_writes_isolated_results_and_builds_causal_summary(tmp_path) -> None:
+    case = _passing_controlled_case()
+    results = []
+    for arm in Arm:
+        config = RunConfig(
+            output_root=tmp_path / "runs",
+            run_id="fake-matrix",
+            project_root=Path.cwd(),
+            model="fake/fake-model",
+            context_window=32_768,
+            provider_factory=MatrixProvider,
+        )
+        results.append(run_case(case, arm=arm, config=config))
+
+    by_arm = {result.arm: result for result in results}
+    full = by_arm[Arm.FULL]
+    classifier_only = by_arm[Arm.CLASSIFIER_ONLY]
+
+    assert all(result.status == "passed" for result in results)
+    assert all(
+        (tmp_path / "runs" / "fake-matrix" / "fake-controlled" / result.arm.value / "result.json").is_file()
+        for result in results
+    )
+    assert full.boundary_event_count == 2
+    assert full.task_hash_changed_count == 1
+    assert full.agent_turn_telemetry_count == 2
+    assert any(metric.trigger == "task_hash_changed" for metric in full.compactions)
+    assert not any(metric.trigger == "task_hash_changed" for metric in classifier_only.compactions)
+    for result in results:
+        assert result.to_dict()["budget_window_type"] == "simulated_budget_window"
+        assert set(result.artifact_paths) == {"trial_root", "events", "result"}
+        trial_root = Path(result.artifact_paths["trial_root"])
+        assert not (trial_root / "data").exists()
+        assert not (trial_root / "project").exists()
+        sanitized_events = Path(result.artifact_paths["events"]).read_text(encoding="utf-8")
+        assert "任务 B" not in sanitized_events
+        assert "已检查实现" not in sanitized_events
+        assert "content" not in sanitized_events
+        for event in json.loads(sanitized_events):
+            if event["type"] == "task_boundary_observed":
+                assert set(event) == {
+                    "type",
+                    "decision",
+                    "confirmed_change",
+                    "should_trigger_compaction",
+                }
+            elif event["type"] in {"compaction_completed", "llm_compaction_completed"}:
+                assert set(event) == {"type", "trigger", "completed"}
+            else:
+                assert event == {"type": "agent_turn_telemetry"}
+
+    summary = build_report(results, output_dir=tmp_path / "summary")
+
+    assert (tmp_path / "summary" / "summary.json").is_file()
+    assert (tmp_path / "summary" / "summary.md").is_file()
+    assert summary["deltas"]["full_minus_classifier_only"]["all_provider_total_tokens"] <= 0
+    assert summary["arms"]["full"]["pass_count"] == 1
+
+
+def test_run_case_routes_hidden_classifier_to_its_own_provider(tmp_path) -> None:
+    main_providers: list[MatrixProvider] = []
+    classifier_providers: list[MatrixProvider] = []
+
+    def main_factory() -> MatrixProvider:
+        provider = MatrixProvider()
+        main_providers.append(provider)
+        return provider
+
+    def classifier_factory() -> MatrixProvider:
+        provider = MatrixProvider()
+        classifier_providers.append(provider)
+        return provider
+
+    result = run_case(
+        _passing_controlled_case(),
+        arm=Arm.FULL,
+        config=RunConfig(
+            output_root=tmp_path / "runs",
+            run_id="separate-classifier",
+            project_root=Path.cwd(),
+            model="Yuren/gpt-5.6-terra",
+            classifier_model="Yuren/gpt-5.6-luna",
+            context_window=32_768,
+            provider_factory=main_factory,
+            classifier_provider_factory=classifier_factory,
+        ),
+    )
+
+    assert result.classifier_model == "Yuren/gpt-5.6-luna"
+    assert any(metric.kind == "classifier" for metric in result.provider_calls)
+    assert all(
+        not (request.tools == [] and request.tool_choice == "none" and request.max_tokens == 512)
+        for request in main_providers[0].requests
+    )
+    assert any(
+        request.tools == [] and request.tool_choice == "none" and request.max_tokens == 512
+        for request in classifier_providers[0].requests
+    )
+
+
+def test_report_keeps_a_valid_verifier_failure_in_token_aggregates(tmp_path) -> None:
+    from benchmark.task_boundary_compaction.models import ProviderCallMetric, TrialResult
+
+    result = TrialResult(
+        case_id="quality-failure",
+        arm=Arm.FULL,
+        model="fake/fake-model",
+        context_window=32_768,
+        status="verifier_failed",
+        verifier_exit_code=1,
+        verifier_stdout_sha256="a" * 64,
+        verifier_stderr_sha256="b" * 64,
+        provider_calls=(
+            ProviderCallMetric(
+                kind="main",
+                input_tokens=10,
+                output_tokens=2,
+                total_tokens=12,
+                elapsed_seconds=0.1,
+            ),
+            ProviderCallMetric(
+                kind="classifier",
+                input_tokens=5,
+                output_tokens=1,
+                total_tokens=6,
+                elapsed_seconds=0.1,
+            ),
+        ),
+        usage_complete=True,
+        artifact_paths={"result": str(tmp_path / "result.json")},
+    )
+
+    summary = build_report([result], output_dir=tmp_path / "summary")
+
+    assert summary["arms"]["full"]["pass_count"] == 0
+    assert summary["arms"]["full"]["eligible_trial_count"] == 1
+    assert summary["arms"]["full"]["all_provider_total_tokens_median"] == 18.0
+
+
+def test_report_separates_fixed_task_a_and_task_b_token_totals(tmp_path) -> None:
+    from benchmark.task_boundary_compaction.models import ProviderCallMetric, TrialResult
+
+    result = TrialResult(
+        case_id="aider-chain",
+        arm=Arm.FULL,
+        model="fake/fake-model",
+        context_window=32_768,
+        status="passed",
+        verifier_exit_code=0,
+        verifier_stdout_sha256="a" * 64,
+        verifier_stderr_sha256="b" * 64,
+        recorded_task_a_calls=(
+            ProviderCallMetric("main", input_tokens=70, output_tokens=30, total_tokens=100, elapsed_seconds=0.1),
+        ),
+        provider_calls=(
+            ProviderCallMetric("main", input_tokens=10, output_tokens=2, total_tokens=12, elapsed_seconds=0.1),
+        ),
+        usage_complete=True,
+        artifact_paths={"result": str(tmp_path / "result.json")},
+    )
+
+    summary = build_report([result], output_dir=tmp_path / "summary")
+
+    arm_summary = summary["arms"]["full"]
+    assert arm_summary["recorded_task_a_total_tokens_median"] == 100.0
+    assert arm_summary["task_b_provider_total_tokens_median"] == 12.0
+    assert arm_summary["full_chain_total_tokens_median"] == 112.0
+
+
+def test_report_excludes_legacy_verifier_failure_with_incomplete_usage(tmp_path) -> None:
+    from benchmark.task_boundary_compaction.models import ProviderCallMetric, TrialResult
+
+    result = TrialResult(
+        case_id="incomplete-usage",
+        arm=Arm.FULL,
+        model="fake/fake-model",
+        context_window=32_768,
+        status="verifier_failed",
+        verifier_exit_code=1,
+        verifier_stdout_sha256="a" * 64,
+        verifier_stderr_sha256="b" * 64,
+        provider_calls=(
+            ProviderCallMetric(
+                kind="main",
+                input_tokens=None,
+                output_tokens=None,
+                total_tokens=None,
+                elapsed_seconds=0.1,
+            ),
+        ),
+        usage_complete=False,
+        artifact_paths={"result": str(tmp_path / "result.json")},
+    )
+
+    summary = build_report([result], output_dir=tmp_path / "summary")
+
+    assert summary["arms"]["full"]["eligible_trial_count"] == 0
+    assert summary["arms"]["full"]["excluded_status_counts"] == {"usage_incomplete": 1}
+    assert summary["arms"]["full"]["all_provider_total_tokens_median"] is None
+
+
+def test_report_delta_uses_only_case_and_repetition_matched_trials(tmp_path) -> None:
+    from benchmark.task_boundary_compaction.models import ProviderCallMetric, TrialResult
+
+    def result(*, case_id: str, arm: Arm, repetition: int, tokens: int, status: str = "passed") -> TrialResult:
+        return TrialResult(
+            case_id=case_id,
+            arm=arm,
+            model="fake/fake-model",
+            context_window=32_768,
+            status=status,
+            verifier_exit_code=0,
+            verifier_stdout_sha256="a" * 64,
+            verifier_stderr_sha256="b" * 64,
+            repetition=repetition,
+            provider_calls=(
+                ProviderCallMetric(
+                    kind="main",
+                    input_tokens=tokens,
+                    output_tokens=0,
+                    total_tokens=tokens,
+                    elapsed_seconds=0.1,
+                ),
+            ),
+            usage_complete=True,
+            artifact_paths={"result": str(tmp_path / f"{case_id}-{arm.value}-{repetition}.json")},
+        )
+
+    summary = build_report(
+        [
+            result(case_id="paired", arm=Arm.FULL, repetition=1, tokens=30),
+            result(case_id="paired", arm=Arm.CLASSIFIER_ONLY, repetition=1, tokens=10),
+            result(case_id="unpaired", arm=Arm.FULL, repetition=1, tokens=1_000),
+            result(
+                case_id="excluded",
+                arm=Arm.FULL,
+                repetition=1,
+                tokens=1_000,
+            ),
+            result(
+                case_id="excluded",
+                arm=Arm.CLASSIFIER_ONLY,
+                repetition=1,
+                tokens=1,
+                status="invalid_boundary",
+            ),
+        ],
+        output_dir=tmp_path / "summary",
+    )
+
+    delta = summary["deltas"]["full_minus_classifier_only"]
+    assert delta["paired_trial_count"] == 1
+    assert delta["all_provider_total_tokens"] == 20.0
+
+
+def test_run_matrix_writes_invalid_results_before_boundary_gate_fails(tmp_path) -> None:
+    case = _passing_controlled_case()
+    config = RunConfig(
+        output_root=tmp_path / "runs",
+        run_id="invalid-boundary",
+        project_root=Path.cwd(),
+        model="fake/fake-model",
+        context_window=32_768,
+        provider_factory=lambda: MatrixProvider(decisions=["same", "same"]),
+    )
+
+    with pytest.raises(RuntimeError, match="fake-controlled"):
+        run_matrix([case], repetitions=1, config=config)
+
+    for arm in Arm:
+        trial_root = tmp_path / "runs" / "invalid-boundary" / "fake-controlled" / arm.value
+        assert (trial_root / "result.json").is_file()
+        assert (trial_root / "events.json").is_file()
+        assert not (trial_root / "data").exists()
+        assert not (trial_root / "project").exists()
+
+
+def test_runner_passes_and_records_shared_benchmark_limits(tmp_path, monkeypatch) -> None:
+    import benchmark.task_boundary_compaction.runner as runner
+
+    original_init = runner.BenchmarkAgentLoop.__init__
+    seen_limits: list[AgentLoopLimits | None] = []
+
+    def record_init(self, *args, **kwargs) -> None:
+        seen_limits.append(kwargs.get("limits"))
+        original_init(self, *args, **kwargs)
+
+    monkeypatch.setattr(runner.BenchmarkAgentLoop, "__init__", record_init)
+    config = RunConfig(
+        output_root=tmp_path / "runs",
+        run_id="limits",
+        project_root=Path.cwd(),
+        model="fake/fake-model",
+        context_window=32_768,
+        provider_factory=MatrixProvider,
+        max_tool_rounds=6,
+        max_provider_calls=12,
+        max_turn_seconds=90,
+        provider_timeout_seconds=75,
+    )
+
+    results = [run_case(_passing_controlled_case(), arm=arm, config=config) for arm in Arm]
+
+    expected = AgentLoopLimits(max_tool_rounds=6, max_provider_calls=12, max_turn_seconds=90)
+    assert seen_limits == [expected, expected, expected]
+    assert all(result.max_tool_rounds == 6 for result in results)
+    assert all(result.max_provider_calls == 12 for result in results)
+    assert all(result.max_turn_seconds == 90 for result in results)
+    assert all(result.provider_timeout_seconds == 75 for result in results)
+
+
+def test_runner_configures_timeout_on_a_provider_sdk_client(tmp_path) -> None:
+    provider = MatrixProvider()
+    client = TimeoutOptionsClient()
+    provider._client = client
+    config = RunConfig(
+        output_root=tmp_path / "runs",
+        run_id="provider-timeout",
+        project_root=Path.cwd(),
+        model="fake/fake-model",
+        context_window=32_768,
+        provider_factory=lambda: provider,
+        provider_timeout_seconds=75,
+    )
+
+    run_case(_passing_controlled_case(), arm=Arm.AUTO_ONLY, config=config)
+
+    assert client.options == [{"timeout": 75, "max_retries": 0}]
+
+
+def test_runner_cli_exposes_benchmark_limit_defaults(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "runner",
+            "--suite",
+            "controlled",
+            "--model",
+            "fake/fake-model",
+            "--context-window",
+            "32768",
+            "--output",
+            "benchmark/runs/example",
+        ],
+    )
+
+    arguments = _parse_arguments()
+
+    assert arguments.max_tool_rounds == 6
+    assert arguments.max_provider_calls == 12
+    assert arguments.max_turn_seconds == 240.0
+    assert arguments.provider_timeout_seconds == 45.0
+    assert arguments.classifier_model is None
+
+
+def test_runner_cli_accepts_classifier_model(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "runner",
+            "--suite",
+            "controlled",
+            "--model",
+            "Yuren/gpt-5.6-terra",
+            "--classifier-model",
+            "Yuren/gpt-5.6-luna",
+            "--context-window",
+            "32768",
+            "--output",
+            "benchmark/runs/example",
+        ],
+    )
+
+    arguments = _parse_arguments()
+
+    assert arguments.classifier_model == "Yuren/gpt-5.6-luna"
+
+
+def test_runner_cli_exits_nonzero_for_a_boundary_gate_failure(monkeypatch) -> None:
+    import benchmark.task_boundary_compaction.runner as runner
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "runner",
+            "--suite",
+            "controlled",
+            "--model",
+            "fake/fake-model",
+            "--context-window",
+            "32768",
+            "--output",
+            "benchmark/runs/example",
+        ],
+    )
+
+    def fail_boundary_gate(*args, **kwargs):
+        raise runner.BenchmarkValidityError("fake-controlled/repetition-1")
+
+    monkeypatch.setattr(runner, "run_matrix", fail_boundary_gate)
+
+    with pytest.raises(SystemExit) as exit_info:
+        runner.main()
+
+    assert exit_info.value.code != 0
